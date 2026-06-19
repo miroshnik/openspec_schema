@@ -1,0 +1,52 @@
+# openspec/schemas/spec-first/schema.yaml
+#
+# Forked from `spec-driven` — KEEP the fork's generated schema.yaml and just ADD the
+# `conformance` artifact below. The fork already fills the correct base instructions,
+# the per-artifact `template:` pointers, and the `apply:` block. The rows here show
+# the FULL shape (real schemas carry version/description/template/instruction + an
+# apply block) — don't overwrite your forked rows with these; they're illustrative.
+
+name: spec-first
+version: 1
+description: Spec-as-source-of-truth flow — capabilities + standards loop + gate + soft judge
+
+artifacts:
+  - id: proposal
+    generates: proposal.md
+    template: proposal.md
+    description: Change proposal (+ affected surfaces & rollback)
+    requires: []
+
+  - id: specs
+    generates: specs/**/*.md          # functional capability specs AND standards (governs:)
+    template: specs.md
+    description: Capabilities and standards
+    requires: [proposal]
+
+  - id: design
+    generates: design.md
+    template: design.md
+    description: Technical design + the standards loop
+    requires: [proposal]
+
+  - id: tasks
+    generates: tasks.md
+    template: tasks.md
+    description: Tasks + checks @ tier + migration + gate + coverage
+    requires: [specs, design]
+
+  # ── OPTIONAL ─────────────────────────────────────────────────────────────────
+  # The soft judge. Runs POST-apply (it judges the implemented diff); modeled as
+  # requires:[tasks] because the DAG can't depend on the apply phase directly.
+  # Re-runnable — regenerate each run. Never hard-blocks (hard gate is external:
+  # mechanical checks + coverage + `openspec validate --strict`).
+  - id: conformance
+    generates: conformance-report.md
+    template: conformance.md
+    description: Soft LLM judge — surfaces conformance suspects, no verdict
+    requires: [tasks]
+
+# Implementation phase (inherited from the fork — shown for completeness).
+apply:
+  requires: [tasks]
+  tracks: tasks.md
