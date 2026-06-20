@@ -69,7 +69,7 @@ git) — everything it needs exists before archive.
 - [ ] Run `npm run gate` after EACH group above (continuously), and as the final group. It reads
       the CHANGE — the functional-spec delta, the `standards/` record, the test markers, the full
       suite, and git — all of which exist pre-archive. It aggregates, failing on first red:
-      1. project mechanical checks (full eslint + vitest suite — regression guard; the
+      1. project mechanical checks (full eslint + vitest suite — functional-regression guard; the
          `eslint-plugin-local/require-rate-limit` rule runs here in `eslint .`);
       2. org-standards integrity (none pinned — skipped);
       3. standard validation — each touched/created `standards/` record has `governs:` + `tier:`
@@ -81,9 +81,9 @@ git) — everything it needs exists before archive.
          scenarios (2 limiter + conforms/violates) must each be marked. The gate also VERIFIES the
          standard's declared `tier:` matches what its check-test resolves to (a machine-checkable
          artifact ⇒ `mechanical`) and fails on mismatch;
-      5. regression diff vs merge-base — the functional spec's built requirement+scenario set
-         against its baseline, and the `standards/` records diffed in git. Both are NEW here → no
-         baseline; coverage governs. NO archived main spec is needed.
+      5. no silent scenario drop (preservation) — diff vs merge-base: the functional spec's built
+         requirement+scenario set against its baseline, and the `standards/` records diffed in git.
+         Both are NEW here → no baseline; coverage governs. NO archived main spec is needed.
       6. `openspec validate --strict` (the functional spec delta only — standards are spec-first
          artifacts, not OpenSpec specs);
       7. judge (tier-judge clauses) — none here; the judge is a local in-loop step, not a CI check.

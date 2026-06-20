@@ -11,7 +11,7 @@ agent at authoring time (see step 4 for the exact mechanism).
 
 > **The promise:** *an OpenSpec flow with checks you can trust your generation against, plus
 > standards that are mandatory across the whole project (cross-cutting, enforced).* (The gate proves spec/test/code
-> CONSISTENCY and no silent regression — not that the spec is true; that is what human
+> CONSISTENCY and no silently-dropped scenario — not that the spec is true; that is what human
 > ratification at PR review is for.)
 
 > **Durable content lives OUTSIDE the change folder and OUTSIDE `openspec/specs/`.**
@@ -68,7 +68,7 @@ Writes `openspec/schemas/spec-first/` (project-local, version-controlled).
 - Set the guidance blocks as the artifact `instruction:` fields in your forked `schema.yaml`
   (the proposal guidance on `proposal`, the functional-capability guidance on `specs`, the
   "Standards loop" design guidance on `design`, the standard-authoring guidance on the new
-  `standard` artifact, and the "Enforcement tasks / coverage / regression" tasks guidance on
+  `standard` artifact, and the "Enforcement tasks / coverage / no silent scenario drop" tasks guidance on
   `tasks`). The guidance is an `instruction:`, NOT appended to the template file. OpenSpec
   (verified 1.4.1) emits, per artifact, a clean `<template>` block ("Use this as the structure
   for your output file. Fill in the sections") AND a separate `<instruction>` block ("AI
@@ -172,7 +172,7 @@ locally after each task group. Branch protection requires THIS check. Paste `tem
 into `openspec/project.md` and wire a single command that runs, PRE-archive (everything it reads —
 functional-spec deltas, `standards/`, tests, the full suite, git — exists before archive):
 
-1. the full project check/test suite (regression guard — the WHOLE suite, not just this
+1. the full project check/test suite (functional-regression guard — the WHOLE suite, not just this
    change's checks);
 2. **org-standards integrity** (only if you consume an org bundle) — every `standards/_org/`
    record matches the pinned bundle on its normalized rule-bearing fields, so a locally loosened
@@ -187,9 +187,9 @@ functional-spec deltas, `standards/`, tests, the full suite, git — exists befo
    test is declared-but-unprojected and FAILS. It reads the CHANGE (functional-spec deltas) + the
    `standards/` files + test markers + git. (Judge clauses covered by their registered judge run.
    Coverage is CHANGE-SCOPED: untouched legacy specs are not audited.);
-5. the **regression diff** — each touched functional spec's requirement+scenario set vs its
-   merge-base built spec (from git), and each touched `standards/` file diffed in git, catching
-   silently dropped scenarios;
+5. the **no silent scenario drop** (spec/standard preservation) check — each touched functional
+   spec's requirement+scenario set vs its merge-base built spec (from git), and each touched
+   `standards/` file diffed in git, catching silently dropped scenarios;
 6. `openspec validate --strict` (functional specs only) — tested on OpenSpec 1.4.1: `## Purpose`
    < 50 chars fails ONLY under `--strict`; the structural rules (Purpose + Requirements present,
    each requirement a literal SHALL/MUST + ≥1 Scenario) are HARD errors that fail even without it.
@@ -203,7 +203,7 @@ the human ratifies the un-mechanizable part at PR review.
 
 Run the mechanical gate after every task group during a change, and require it green as the LAST
 task group —
-everything it reads exists pre-archive. Implement the coverage + regression checks once per
+everything it reads exists pre-archive. Implement the coverage + no-silent-scenario-drop checks once per
 project; they key off the traceability marker (`@spec <capability-or-standard>/<requirement>/<scenario>`
 by default — one per scenario a test projects; a check covering conforms AND violates carries two).
 Each test is a stack-specific PROJECTION of the scenario — its FORM is the stack's choice (unit /
@@ -296,5 +296,5 @@ gate (no LLM, no API keys, reproducible), and the human ratifies the un-mechaniz
 at PR review and MAY run the judge on demand. A team that wants LLM suspects posted on PRs
 MAY add their own non-required judge-annotation job, but it is not shipped by default. The
 required CI check stays the mechanical gate — the project suite + org-standards integrity +
-standards validation + coverage + regression +
+standards validation + coverage + no silent scenario drop +
 `openspec validate --strict` — a non-deterministic verdict never reds a shared build.

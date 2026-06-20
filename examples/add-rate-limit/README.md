@@ -74,7 +74,7 @@ It goes **GREEN** only after: the limiter + its two scenario tests land (covers 
 the AST rule + its check-test land with the `@spec` markers (covers `rate-limit-policy`); and the
 **codemod** wraps the 3 handlers (clears the eslint violations). The other steps: org-integrity is
 **skipped** (no bundle pinned); standard-validation passes (the record has `governs`+`tier` + a
-SHALL rule + conforms + violates); regression finds **no baseline** — both are new, so coverage
+SHALL rule + conforms + violates); the preservation diff finds **no baseline** — both are new, so coverage
 governs; `validate --strict` passes on the functional delta; the local in-loop judge runs but this
 change has **no judge-tier clause**, so it finds nothing (an empty judge report is a valid, good
 outcome). CI runs only the mechanical gate — no LLM there.
@@ -101,6 +101,6 @@ Because `rate-limit-policy` is a standard **CREATE**, it is surfaced for human s
 review: a mechanical check flags the standards change in the diff (`git diff` touches `standards/`,
 no LLM needed) so the human reviewer ratifies it at PR review; the change is not self-merged. A
 green gate proves the projections are **consistent** with the source, that no
-scenario silently regressed, and that both the spec and the standard are **enforced** — it does
+scenario was silently dropped, and that both the spec and the standard are **enforced** — it does
 **not** prove they are correct or their tests strong. That is what the human **ratifies** at PR
 review: green proved consistency; the approval ratifies the spec/standard as the source of truth.

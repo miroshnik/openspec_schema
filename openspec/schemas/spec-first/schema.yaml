@@ -97,7 +97,7 @@ artifacts:
   - id: tasks
     generates: tasks.md
     template: tasks.md               # clean scaffold
-    description: Tasks (ONE pass) + tier + test-per-scenario + migration + coverage + regression + gate as the last group
+    description: Tasks (ONE pass) + tier + test-per-scenario + migration + coverage + no silent scenario drop + gate as the last group
     requires: [specs, design, standard]
     instruction: |                   # SUMMARY — full text in templates/_additions.md
       ONE PASS — author EVERYTHING here: functional-spec deltas + standards/ records + tests +
@@ -127,17 +127,19 @@ artifacts:
       # registered judge check. Coverage is CHANGE-SCOPED: untouched legacy specs are not audited
       # (touch one ⇒ spec + test it); a non-blocking `coverage --all` backlog report drives the
       # brownfield ratchet.
-      # REGRESSION: the gate runs the FULL existing suite (greening your own checks while redding an
-      # existing one fails) and diffs against the git MERGE-BASE — each touched functional spec's
-      # built form (requirement+scenario set) and each standards/ file (plain git diff) — a scenario
-      # gone without a `## REMOVED Requirements` delta (functional) or a Rationale-log-justified
-      # removal (standard) is silent regression, fail.
+      # FUNCTIONAL REGRESSION: the gate runs the FULL existing suite (greening your own checks while
+      # redding an existing one fails). NO SILENT SCENARIO DROP (spec/standard PRESERVATION): the gate
+      # diffs against the git MERGE-BASE — each touched functional spec's built form
+      # (requirement+scenario set) and each standards/ file (plain git diff) — a scenario gone without
+      # a `## REMOVED Requirements` delta (functional) or a Rationale-log-justified removal (standard)
+      # is a silent drop, fail. The full suite cannot catch this (deleting a scenario together with its
+      # test leaves the suite green); it is NOT a functional regression.
       # tier is GATE-VERIFIED: the gate asserts a standard's declared tier matches what its `test:`
       # resolves to (mechanical lint/AST/test ⇒ mechanical; registered judge run ⇒ judge) and FAILS
       # on mismatch.
       # GATE, AS THE LAST GROUP: the LAST task group runs the project gate (project.md; templates/gate.md)
-      # green — the MECHANICAL gate: the full suite + org-standards integrity + coverage + regression +
-      # `validate --strict` (functional specs). That mechanical gate is what CI runs as the required
+      # green — the MECHANICAL gate: the full suite + org-standards integrity + coverage + no silent
+      # scenario drop + `validate --strict` (functional specs). That mechanical gate is what CI runs as the required
       # status check (deterministic, no LLM) AND what you run locally after each task group. The judge
       # is a SEPARATE LOCAL step in the authoring loop (hard-local) — not part of the CI gate. The gate
       # reads the CHANGE: deltas + standards/ + tests + suite + git —
@@ -152,7 +154,7 @@ artifacts:
   # Re-runnable — regenerate each run. A LOCAL in-loop reviewer (hard-local): the
   # authoring loop runs it and won't close a task with an open suspect. It is NOT a
   # CI job and NOT a CI gate step. The required CI check is the MECHANICAL gate:
-  # the suite + org-standards integrity + coverage + regression + `validate --strict`
+  # the suite + org-standards integrity + coverage + no silent scenario drop + `validate --strict`
   # (deterministic, no LLM). The human ratifies the un-mechanizable part at PR review.
   - id: judge
     generates: judge-report.md

@@ -24,13 +24,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # The regression diff needs the merge-base from git — the functional spec's built form
-          # and the standards/ records as they were before this change — so fetch enough history.
+          # The no-silent-scenario-drop diff needs the merge-base from git — the functional spec's
+          # built form and the standards/ records as they were before this change — so fetch enough
+          # history.
           fetch-depth: 0
-      - name: Materialize merge-base for the regression baseline
+      - name: Materialize merge-base for the preservation baseline
         run: |
           git fetch --no-tags origin "${{ github.base_ref }}"
-          # regression.ts reads the touched openspec/specs/<cap>/spec.md AND the standards/<name>.md
+          # preservation.ts reads the touched openspec/specs/<cap>/spec.md AND the standards/<name>.md
           # files at this SHA as the baseline:
           echo "MERGE_BASE=$(git merge-base "origin/${{ github.base_ref }}" HEAD)" >> "$GITHUB_ENV"
 
@@ -43,11 +44,11 @@ jobs:
       # `npm run gate` runs the gate steps in order, failing on the first red:
       #   1 check:suite (eslint + tsc + vitest)  2 org-integrity (skipped, none)
       #   3 check:standards (each standards/ record: governs+tier + a SHALL rule + conforms + violates)
-      #   4 check:coverage  5 check:regression (reads $MERGE_BASE, set above, for the baseline)
+      #   4 check:coverage  5 check:preservation (reads $MERGE_BASE, set above, for the baseline)
       #   6 openspec validate --strict (the functional spec delta only)
       # The judge is NOT a CI step — it is a local in-loop reviewer (hard-local) the authoring loop
       # runs; the human ratifies the un-mechanizable part at PR review.
       # (CI uses `npx` prefixes; project.md shows the bare forms assuming local bins on PATH —
       #  the same commands.)
       - name: Gate (mechanical steps — the required check)
-        run: npm run check:suite && npm run check:standards && npm run check:coverage && npm run check:regression && npx openspec validate --strict
+        run: npm run check:suite && npm run check:standards && npm run check:coverage && npm run check:preservation && npx openspec validate --strict

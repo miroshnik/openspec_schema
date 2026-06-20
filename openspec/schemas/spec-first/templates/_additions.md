@@ -184,7 +184,7 @@ gate needs.
 SOURCE-FIRST (#0): the spec/standard is the source of truth; the check, the test, the code,
 and any migration are PROJECTIONS of it. To change behavior, amend the spec/scenario (or the
 standard's rule) FIRST, then re-project its test and code — never edit a derivative behind a
-scenario you didn't touch (the regression diff won't always catch it; it's a discipline the
+scenario you didn't touch (the preservation diff won't always catch it; it's a discipline the
 author owns and the reviewer ratifies).
 
 For every binding clause introduced or touched (a functional capability scenario or a
@@ -229,21 +229,25 @@ HONESTY: coverage proves each SCENARIO is LINKED to a wired-in test that runs �
 prove the test faithfully or non-trivially exercises the scenario (an empty test with the right
 marker passes). Test STRENGTH is ratification's job.
 
-REGRESSION (via git): the gate runs the FULL existing check/test suite, not only this change's
-checks — a change that greens its own checks but reds an existing one is a regression and fails.
-It also diffs against the git MERGE-BASE: each touched functional spec's requirement+scenario set
-against the spec as it stood before this change (recover it from git, NOT from the archive delta,
-which is only the ADDED/MODIFIED/REMOVED diff and cannot reconstruct the prior set), and the
-standards/ files diffed in git. A requirement or scenario that disappeared without an explicit
-`## REMOVED Requirements` delta is a silent regression — fail. Git is the prior-state source,
-so the check runs PRE-archive.
+FUNCTIONAL REGRESSION (the suite): the gate runs the FULL existing check/test suite, not only
+this change's checks — a change that greens its own checks but reds an existing one is a
+regression and fails.
+
+NO SILENT SCENARIO DROP / PRESERVATION (via git): the gate also diffs against the git MERGE-BASE:
+each touched functional spec's requirement+scenario set against the spec as it stood before this
+change (recover it from git, NOT from the archive delta, which is only the ADDED/MODIFIED/REMOVED
+diff and cannot reconstruct the prior set), and the standards/ files diffed in git. A requirement
+or scenario that disappeared without an explicit `## REMOVED Requirements` delta (or, for a
+standard, a Rationale-log entry recording the removal) is a silent drop — fail. The full suite
+cannot catch this (deleting a scenario together with its test leaves the suite green). Git is the
+prior-state source, so the check runs PRE-archive.
 
 GATE, CONTINUOUSLY: run the project's GATE (defined in project.md; see templates/gate.md) after
 each task group during the change — not only at the end — so breakage surfaces early. The LAST
 TASK GROUP = run the GATE GREEN. It MUST be green before the change is complete. The gate reads
 the CHANGE: the functional-spec deltas + the standards/ files + the tests + the full suite + git
 — everything exists PRE-archive. The gate is MECHANICAL — it aggregates: every project mechanical
-check + the coverage check + the regression check + `openspec validate --strict` (functional specs
+check + the coverage check + the preservation check + `openspec validate --strict` (functional specs
 only; standards are gate-validated, not openspec-validated). This mechanical gate is the required
 check CI runs and what you run locally after each task group; NO LLM is in it. The judge is a
 SEPARATE LOCAL step in the authoring loop (hard-local), not part of the CI gate.

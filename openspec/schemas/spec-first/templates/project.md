@@ -20,7 +20,7 @@ org-integrity (`standards/_org` bundle, normalized match) + coverage (per touche
 delta scenarios AND per touched/created `standards/<name>.md`, EVERY `#### Scenario:` has ≥1 test
 carrying its `@spec <capability-or-standard>/<requirement>/<scenario>` marker — a scenario with no
 projecting test FAILS; gate-verifies a standard's `tier:`; validates `standards/` structure) +
-regression (vs git merge-base) + `validate --strict` (functional specs). NO LLM in CI. The judge is
+no silent scenario drop (preservation, vs git merge-base) + `validate --strict` (functional specs). NO LLM in CI. The judge is
 a SEPARATE LOCAL step in the authoring loop (hard-local), not a CI gate step. Runs on the CHANGE as
 the LAST TASK GROUP, green pre-archive; archive + merge are the FINISH after green.>
 
@@ -41,7 +41,7 @@ bite if the host blocks every other way in. On the default branch, require:
 - no direct pushes;
 - a pull request to merge;
 - the MECHANICAL gate's CI check green (the required status check) — suite + org-integrity +
-  coverage + regression + `validate --strict`. This is deterministic and runs no LLM; the judge is
+  coverage + preservation + `validate --strict`. This is deterministic and runs no LLM; the judge is
   NOT a CI step (it runs locally in the authoring loop, hard-local);
 - ≥ 1 human approval — which RATIFIES the source as the source of truth (intent + scenario
   strength for functional specs, and any standards CREATE/REVISE). The reviewer judges the

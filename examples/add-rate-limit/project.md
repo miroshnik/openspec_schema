@@ -20,19 +20,19 @@ steps in order, failing on the first red.
 ```json
 {
   "scripts": {
-    "gate":       "npm run check:suite && npm run check:standards && npm run check:coverage && npm run check:regression && openspec validate --strict && npm run judge:local",
+    "gate":       "npm run check:suite && npm run check:standards && npm run check:coverage && npm run check:preservation && openspec validate --strict && npm run judge:local",
     "check:suite":      "eslint . && tsc --noEmit && vitest run",
     "check:standards":  "tsx scripts/standards.ts",
     "check:coverage":   "tsx scripts/coverage.ts",
-    "check:regression": "tsx scripts/regression.ts",
+    "check:preservation": "tsx scripts/preservation.ts",
     "judge:local":      "tsx scripts/judge.ts --mode=local"
   }
 }
 ```
 
 1. **Project mechanical checks** — `eslint . && tsc --noEmit && vitest run`. The FULL existing
-   suite (regression guard: greening your own checks while reddening an existing one fails). The
-   `require-rate-limit` AST rule runs here, in `eslint .`, like any standard's check.
+   suite (functional-regression guard: greening your own checks while reddening an existing one
+   fails). The `require-rate-limit` AST rule runs here, in `eslint .`, like any standard's check.
 
 2. **Org-standards integrity** — none (no org bundle consumed). Skipped. (If an `org-standards/`
    bundle were pinned, a `scripts/org-integrity.ts` would assert each copied-in standard matches
@@ -59,13 +59,13 @@ steps in order, failing on the first red.
    legacy specs are not audited; touch one and you must spec + test it. (`tsx scripts/coverage.ts
    --all` is a non-blocking backlog report over the whole tree — the brownfield ratchet.)
 
-5. **Regression diff** — `tsx scripts/regression.ts`. Diffs against the git merge-base, NO
-   archived main spec required. For each touched functional spec, diff its requirement+scenario
-   set against its BASELINE = the built spec at this change's merge-base
-   (`openspec/specs/<cap>/spec.md` recovered from git). For each touched standard, diff its
-   `standards/<name>.md` record in git. A requirement/scenario gone without an explicit
-   `## REMOVED Requirements` delta (functional) or a Rationale-logged amendment (standard) fails. A
-   newly added spec/standard has no baseline → coverage governs it instead.
+5. **No silent scenario drop (spec/standard preservation)** — `tsx scripts/preservation.ts`. Diffs
+   against the git merge-base, NO archived main spec required. For each touched functional spec,
+   diff its requirement+scenario set against its BASELINE = the built spec at this change's
+   merge-base (`openspec/specs/<cap>/spec.md` recovered from git). For each touched standard, diff
+   its `standards/<name>.md` record in git. A requirement/scenario gone without an explicit
+   `## REMOVED Requirements` delta (functional) or a Rationale-logged amendment (standard) is a
+   silent drop and fails. A newly added spec/standard has no baseline → coverage governs it instead.
 
 6. **`openspec validate --strict`** — exit 0, the functional spec delta only (standards are not
    OpenSpec specs). On 1.4.1, `## Purpose` < 50 chars fails only under `--strict`; structural rules

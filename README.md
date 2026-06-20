@@ -25,7 +25,7 @@ exists to enforce that one rule.
 4. [The flow & lifecycle](#the-flow--lifecycle)
 5. [The standards loop](#the-standards-loop)
 6. [The gate](#the-gate)
-7. [Tests, coverage, regression](#tests-coverage-regression)
+7. [Tests, coverage, preservation](#tests-coverage-preservation)
 8. [Empirical OpenSpec 1.4.1 facts](#empirical-openspec-141-facts)
 9. [Governance — make the flow the only path](#governance--make-the-flow-the-only-path)
 10. [Brownfield adoption](#brownfield-adoption)
@@ -52,8 +52,8 @@ heads or a wiki nobody reads. **spec-first** makes both first-class:
   test, or a lint/AST rule) — a behavioral scenario typically to an executable test, a purely
   structural rule MAY project to a lint/AST check.
 - A single **gate** must be green before a change completes (full suite + org-integrity +
-  coverage + regression + `validate --strict`). The gate CI runs is mechanical-only; the judge
-  is a separate local step.
+  coverage + no silent scenario drop + `validate --strict`). The gate CI runs is mechanical-only;
+  the judge is a separate local step.
 - What no machine can check, an **LLM judge** surfaces — a LOCAL in-loop reviewer (hard-local);
   it is not a CI job. CI is mechanical-only; the human ratifies at review.
 - A **standard** is a cross-cutting rule that binds every surface it governs across the *whole
@@ -70,7 +70,7 @@ inherits the delta-spec format that `archive` / `sync` rely on.
 This is the honest line, and it is the whole point of the design:
 
 **Green means** the spec, its standards, the tests, and the code are CONSISTENT, and that no
-scenario silently regressed. It makes the spec the thing you *review*. It does NOT prove the spec
+scenario was silently dropped. It makes the spec the thing you *review*. It does NOT prove the spec
 is correct or its test strong: the same agent may author spec, standard, scenario, and test, so a
 hollow self-consistent spec also goes green. The spec becomes trustworthy only when a human
 **ratifies** it at PR review. The gate makes divergence-from-the-record mechanical;
@@ -81,7 +81,7 @@ So the trust split is:
 | What | Who/what guarantees it |
 | --- | --- |
 | Projections are consistent with the record | the gate (mechanical) |
-| No scenario silently disappeared | the gate (regression diff) |
+| No scenario silently disappeared | the gate (preservation diff) |
 | Every scenario is actually projected | the gate (coverage) |
 | The un-mechanizable part fits the spirit | the judge (surfaces; human ratifies) |
 | **The spec/standard itself is true / its tests are strong** | **a human, at PR approval** |
@@ -283,13 +283,14 @@ is a SEPARATE LOCAL step in the authoring loop (hard-local), not part of the CI 
    matches what its test resolves to (machine-checkable test ⇒ mechanical; registered judge run ⇒
    judge) and FAILS on mismatch. A judge-tier standard is covered by its registered judge check,
    not a mechanical test. Untouched functional specs are not re-audited.
-5. **Regression diff** — `<regression command>`. For each touched functional spec, diff its
-   requirement+scenario set against its BASELINE = the **full built spec at this change's
-   merge-base** (recovered from git, NOT from the archive delta). For each touched standard, diff
-   the `standards/` file against its git merge-base form. A requirement or scenario that
-   disappeared without an explicit `## REMOVED Requirements` (or `## RENAMED Requirements`) delta
-   — or, for a standard, a dropped requirement/scenario without a Rationale-log entry — is a silent
-   regression. NO archived main spec is needed (the merge-base built form comes from git).
+5. **No silent scenario drop** (spec/standard preservation) — `<preservation command>`. For each
+   touched functional spec, diff its requirement+scenario set against its BASELINE = the **full
+   built spec at this change's merge-base** (recovered from git, NOT from the archive delta). For
+   each touched standard, diff the `standards/` file against its git merge-base form. A requirement
+   or scenario that disappeared without an explicit `## REMOVED Requirements` (or `## RENAMED
+   Requirements`) delta — or, for a standard, a dropped requirement/scenario without a
+   Rationale-log entry — is a silent drop. NO archived main spec is needed (the merge-base built
+   form comes from git).
 6. **`openspec validate --strict`** — exit 0 over the functional-spec deltas. (Structural rules
    are HARD errors even without `--strict`; `## Purpose` < 50 chars fails only under `--strict` —
    see the 1.4.1 facts below.)
@@ -311,11 +312,11 @@ and before archive. Archive then merges the functional deltas into `openspec/spe
 
 The one thing the gate canNOT do is block direct pushes to the default branch — that is your git
 host's branch protection (see Governance). What the gate proves and doesn't prove is the honesty
-note above: consistency + no-silent-regression, NOT spec truth.
+note above: consistency + no silently-dropped scenario, NOT spec truth.
 
 ---
 
-## Tests, coverage, regression
+## Tests, coverage, preservation
 
 **A test on every scenario.** A test is a PROJECTION of a scenario, regenerable from it; the
 projection's FORM is the stack's choice. No scenario ships without a wired-in test carrying its
@@ -345,22 +346,25 @@ fixture group). A `standard@mechanical` check-test covering `conforms` AND `viol
 markers. Scenario names are matched like requirement names (case-sensitive, trailing-whitespace
 normalized); renaming a scenario ⇒ re-project its marker.
 
-**Regression** runs the FULL existing check/test suite (a change that greens its own checks but
-reds an existing one is a regression and fails), AND diffs durable records against their
+**The functional-regression guard** runs the FULL existing check/test suite (a change that greens
+its own checks but reds an existing one is a regression and fails) — this is gate step 1, the full
+suite.
+
+**No silent scenario drop** (spec/standard preservation) diffs durable records against their
 merge-base form:
 
 - **Functional specs** — diff each touched spec's requirement+scenario set against its **BASELINE =
   the merge-base built spec** (`openspec/specs/<cap>/spec.md` as it stood before these deltas
   applied — **recovered from git, NOT from the archive delta**, which is only the
   ADDED/MODIFIED/REMOVED diff and cannot reconstruct the prior set). A requirement or scenario that
-  disappeared without an explicit `## REMOVED Requirements` delta is a silent regression (archive's
+  disappeared without an explicit `## REMOVED Requirements` delta is a silent drop (archive's
   MODIFIED replaces the WHOLE requirement block) — fail.
 - **Standards** — `standards/<name>.md` are plain git files; diff each touched standard against its
-  git merge-base. A dropped requirement/scenario without a Rationale-log entry is a silent
-  regression — fail.
+  git merge-base. A dropped requirement/scenario without a Rationale-log entry is a silent drop —
+  fail.
 
 A touched functional spec with NO built form at the merge-base (newly added) has no baseline —
-coverage governs it instead, and the regression baseline is established from this change forward.
+coverage governs it instead, and the preservation baseline is established from this change forward.
 
 ### Empirical OpenSpec 1.4.1 facts
 
@@ -386,8 +390,8 @@ These are tested, version-sensitive behaviors — re-verify on upgrade:
   `openspec archive` never touches them — their frontmatter, Decision Record, and Rationale log are
   always intact. They are ordinary committed git files.
 - **Archive matches requirement names CASE-SENSITIVELY**, normalizing trailing whitespace only —
-  keep the traceability marker's casing exact, and bind the regression matcher to the same
-  trailing-only, case-sensitive normalization.
+  keep the traceability marker's casing exact, and bind the preservation matcher (merge-base diff)
+  to the same trailing-only, case-sensitive normalization.
 
 ### The openspec-instructions delivery mechanism
 
@@ -395,7 +399,7 @@ OpenSpec (verified on 1.4.1) emits, per artifact, a `<template>` block prefaced 
 structure for your output file. Fill in the sections" AND a separate `<instruction>` block ("AI
 instructions for creating this artifact"). So the how-to GUIDANCE prose (the "Capabilities" specs
 guidance, the "Standards loop" design guidance, the "Standard record" guidance, the "Enforcement
-tasks/coverage/regression" tasks guidance, the proposal guidance) is set as the artifact's
+tasks/coverage/preservation" tasks guidance, the proposal guidance) is set as the artifact's
 `instruction:` field in the forked `schema.yaml` — NOT appended to the template file. The
 `template:` files stay clean FILL-IN SCAFFOLDS; genuine document STRUCTURE (e.g. the proposal's
 `## Affected surfaces & rollback` heading) MAY remain a small template addition.

@@ -42,7 +42,7 @@ WHERE THE JUDGE BINDS — HARD-LOCAL, not a CI job. The judge is a LOCAL in-loop
     suspect remains `open` — note "green" means "no open suspect at the last run," not a stable
     property. This is how a judge clause counts as "a test on every spec."
   - In CI: the judge is NOT a CI job. CI runs the deterministic, mechanical gate only (suite +
-    org-standards integrity + coverage + regression + `openspec validate --strict`) — no LLM, no
+    org-standards integrity + coverage + preservation + `openspec validate --strict`) — no LLM, no
     judge step. A team MAY optionally add their own non-required judge-annotation CI job that posts
     suspects on PRs, but it is not part of the gate and not shipped by default; CI stays
     deterministic and needs no API keys.
@@ -50,7 +50,7 @@ WHERE THE JUDGE BINDS — HARD-LOCAL, not a CI job. The judge is a LOCAL in-loop
     part (intent, naming, ergonomics, spirit) themselves, and MAY run the judge on demand. This is
     where trust in the source is established.
 
-So the CI gate stays the project's mechanical checks + coverage + regression +
+So the CI gate stays the project's mechanical checks + coverage + preservation +
 `openspec validate --strict` — deterministic, reproducible. The judge is the obligatory in-loop
 reviewer (hard-local) for what those cannot mechanize — caught before the change is ever pushed,
 surfaced (not enforced) for a human to ratify at review.

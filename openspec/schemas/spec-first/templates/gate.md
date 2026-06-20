@@ -30,9 +30,9 @@ loop (hard-local), described after the gate. The gate runs on the CHANGE as the
 LAST TASK GROUP — everything it reads (deltas + `standards/` + tests + git) exists
 pre-archive.
 
-1. Project mechanical checks — `<lint/type/test command>`. The FULL existing suite,
-   not only this change's checks. (Regression guard: greening your own checks while
-   reddening an existing one is a regression — fail.)
+1. Project mechanical checks — `<lint/type/test command>`. The functional-regression guard —
+   the FULL existing suite, not only this change's checks. (Greening your own checks while
+   reddening an existing one broke existing functionality — a regression — fail.)
 
 2. Org-standards integrity — `<integrity command>` (only if you consume an org bundle;
    skip otherwise). Every file under `standards/_org/` MUST match the pinned org-standards
@@ -77,16 +77,17 @@ pre-archive.
      `#### Scenario: violates`. Standards are spec-first artifacts outside `openspec/`; strict
      never sees them, so the gate is their structural check — fail if malformed.
 
-4. Regression diff — `<regression command>`. Diff against the git MERGE-BASE. For each touched
-   functional spec, diff its requirement+scenario set against its BASELINE = the full built spec
-   at this change's merge-base (`openspec/specs/<cap>/spec.md` before these deltas applied — from
-   git). For each touched `standards/<name>.md`, diff its requirement+scenario set against the same
-   file at the merge-base (a plain git diff — standards are ordinary git files). A requirement or
-   scenario that disappeared without an explicit `## REMOVED Requirements` (or `## RENAMED
-   Requirements`) delta — or, for a standard, without a Rationale-log entry recording the removal —
-   is a silent regression, fail. A touched spec or a newly created standard with NO form at the
-   merge-base has no baseline — coverage governs it instead, and the regression baseline is
-   established from this change forward.
+4. No silent scenario drop (spec/standard preservation) — `<preservation command>`. Diff against
+   the git MERGE-BASE. For each touched functional spec, diff its requirement+scenario set against
+   its BASELINE = the full built spec at this change's merge-base (`openspec/specs/<cap>/spec.md`
+   before these deltas applied — from git). For each touched `standards/<name>.md`, diff its
+   requirement+scenario set against the same file at the merge-base (a plain git diff — standards
+   are ordinary git files). A requirement or scenario that disappeared without an explicit
+   `## REMOVED Requirements` (or `## RENAMED Requirements`) delta — or, for a standard, without a
+   Rationale-log entry recording the removal — is a silent drop, fail. (The full suite cannot catch
+   this: a scenario deleted together with its test leaves the suite green.) A touched spec or a
+   newly created standard with NO form at the merge-base has no baseline — coverage governs it
+   instead, and the preservation baseline is established from this change forward.
 
 5. `openspec validate --strict` — exit 0, on the FUNCTIONAL specs (capabilities). Tested against
    OpenSpec 1.4.1: `## Purpose` < 50 chars fails ONLY under `--strict`; the structural rules (a
@@ -125,9 +126,9 @@ RuleTester valid|invalid fixture group), and a single test MAY carry MULTIPLE `@
 one per scenario it projects (a standard@mechanical check-test covering conforms AND violates
 carries TWO). The coverage check greps these. Scenario names are matched like requirement names:
 case-sensitive, trailing-whitespace normalized — keep the marker's casing exact, renaming a
-scenario means re-projecting its marker, and bind the regression matcher to the same
-trailing-only, case-sensitive normalization (in 1.4.1 archive matches requirement names that
-way too).
+scenario means re-projecting its marker, and bind the preservation matcher (the merge-base diff)
+to the same trailing-only, case-sensitive normalization (in 1.4.1 archive matches requirement
+names that way too).
 ```
 
 ---
