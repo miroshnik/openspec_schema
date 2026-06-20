@@ -33,18 +33,24 @@ Rules:
     previously-justified suspect that recurs reappears as `open` and must be re-justified or
     fixed; durable justification persists only in the standard's Rationale log.
 
-WHERE THE JUDGE BINDS — hard locally, soft in CI. Same review, two postures:
+WHERE THE JUDGE BINDS — HARD-LOCAL, not a CI job. The judge is a LOCAL in-loop reviewer:
   - Locally (the authoring loop): BLOCKING. A judge-tier clause is REQUIRED to RUN and SURFACE
     — it cannot be skipped — but it does NOT self-enforce: its suspects BIND only when a human
-    ratifies them at PR approval, recorded as a durable entry in the standard's Rationale log.
+    ratifies them at PR review, recorded as a durable entry in the standard's Rationale log.
     Do not close the task while a suspect is `open` — resolve it (fix the code), or mark it
     `justified` with a pointer to that Rationale log entry. The local loop is green only when no
     suspect remains `open` — note "green" means "no open suspect at the last run," not a stable
     property. This is how a judge clause counts as "a test on every spec."
-  - In CI: SOFT. Run headlessly (an agent in print mode) and POST the suspects — PR
-    annotations, or a "human-review-needed" flag. NEVER auto-fail the build on this
-    report; a non-deterministic verdict must not red a shared build.
+  - In CI: the judge is NOT a CI job. CI runs the deterministic, mechanical gate only (suite +
+    org-standards integrity + coverage + regression + `openspec validate --strict`) — no LLM, no
+    judge step. A team MAY optionally add their own non-required judge-annotation CI job that posts
+    suspects on PRs, but it is not part of the gate and not shipped by default; CI stays
+    deterministic and needs no API keys.
+  - At PR review: the HUMAN reviewer RATIFIES. They read the diff and judge the un-mechanizable
+    part (intent, naming, ergonomics, spirit) themselves, and MAY run the judge on demand. This is
+    where trust in the source is established.
 
-So the CI hard gate stays the project's mechanical checks + coverage + regression +
-`openspec validate --strict`. The judge is the obligatory in-loop reviewer for what those
-cannot mechanize — caught before the change is ever pushed, surfaced (not enforced) after.
+So the CI gate stays the project's mechanical checks + coverage + regression +
+`openspec validate --strict` — deterministic, reproducible. The judge is the obligatory in-loop
+reviewer (hard-local) for what those cannot mechanize — caught before the change is ever pushed,
+surfaced (not enforced) for a human to ratify at review.

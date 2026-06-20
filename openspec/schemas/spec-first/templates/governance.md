@@ -157,8 +157,9 @@ because the gate proves consistency among projections but not the source's corre
              migration. Run the GATE after each task group; the LAST TASK GROUP is the gate GREEN.
              The gate reads the CHANGE itself — functional-spec deltas + the `standards/` files +
              test markers + the full suite + git — and everything exists PRE-archive.
-4. PR      — open the PR from `change/<id>`. CI runs the gate (soft judge posts suspects). The
-             changes-via-openspec, branch-per-change, and change-lifecycle checks must pass.
+4. PR      — open the PR from `change/<id>`. CI runs the mechanical gate (the required check; no
+             LLM); the human reviewer ratifies at review. The changes-via-openspec,
+             branch-per-change, and change-lifecycle checks must pass.
 5. REVIEW  — a human approves, ratifying the spec as source of truth and any standards CREATE/REVISE.
              Branch protection requires approval + all required checks green.
 6. ARCHIVE — `openspec archive <id>` on the branch → merges the FUNCTIONAL-spec deltas into

@@ -115,10 +115,11 @@ Then for each cross-cutting decision:
 The standards loop is CONDITIONAL: the standard artifact runs only on a CREATE or REVISE.
 A change that only COMPLIES or DEFERS touches no standards/ file.
 
-RATIFICATION — every CREATE / REVISE is surfaced for human sign-off at PR review: the
-soft-CI judge posts "standards-changed" suspects and a human approves the PR. Do not
-self-merge a standards change — standards bind the whole project; never let one land
-agent-only.
+RATIFICATION — every CREATE / REVISE is surfaced for human sign-off at PR review: a
+mechanical check flags the standards change in the diff (git diff touches standards/) so
+the human reviewer ratifies it at PR review. No LLM does this surfacing — it is
+deterministic. Do not self-merge a standards change — standards bind the whole project;
+never let one land agent-only.
 
 ENFORCEMENT — for each clause, RECORD whether its test will be REUSED (an existing
 project test already covers it) or newly AUTHORED. The full resolve-then-author mechanics
@@ -160,9 +161,10 @@ TIER — machine-checkable-at-all vs needs-human-judgment, NOT a mechanism. Two,
                (behavioral → an executable test; purely structural → a static-analysis
                check), but the concrete tool is the STACK'S choice — not necessarily lint.
   judge      — focused per-standard LLM review of the part a machine cannot catch
-               (intent / naming / ergonomic fit). REQUIRED to RUN and SURFACE; hard locally
-               (blocks closing the task), soft in CI (posts suspects), BINDING only when a
-               human ratifies its suspects at PR review.
+               (intent / naming / ergonomic fit). A LOCAL in-loop reviewer: REQUIRED to RUN
+               and SURFACE in the authoring loop; hard-local (blocks closing the task). It is
+               NOT a CI job — CI is mechanical-only. BINDING only when a human ratifies its
+               suspects at PR review.
 The gate VERIFIES the declared tier matches what the conforms/violates test resolves to (any
 machine-checkable test/check ⇒ mechanical; a registered judge run ⇒ judge) and FAILS on mismatch.
 ```
@@ -196,7 +198,8 @@ standard's rule):
                    The scenario's nature hints at the class (behavioral → executable test;
                    purely structural → static analysis); the concrete tool is stack-specific.
       judge      — focused per-standard review of the un-mechanizable part
-                   (intent / naming / ergonomics); hard locally, soft in CI.
+                   (intent / naming / ergonomics); a LOCAL in-loop reviewer, hard-local
+                   (blocks closing the task). CI is mechanical-only; the human ratifies at review.
   - RESOLVE or AUTHOR its TEST as a PROJECTION of the scenarios: functional → tests projecting
     its scenarios; standard → a test that the enforcer FLAGS the `violates` example and PASSES
     the `conforms` example; standard@judge → register the runnable judge check. Add a
@@ -239,9 +242,11 @@ GATE, CONTINUOUSLY: run the project's GATE (defined in project.md; see templates
 each task group during the change — not only at the end — so breakage surfaces early. The LAST
 TASK GROUP = run the GATE GREEN. It MUST be green before the change is complete. The gate reads
 the CHANGE: the functional-spec deltas + the standards/ files + the tests + the full suite + git
-— everything exists PRE-archive. The gate aggregates: every project mechanical check + the
-coverage check + the regression check + `openspec validate --strict` (functional specs only;
-standards are gate-validated, not openspec-validated) + the judge (hard locally, soft in CI).
+— everything exists PRE-archive. The gate is MECHANICAL — it aggregates: every project mechanical
+check + the coverage check + the regression check + `openspec validate --strict` (functional specs
+only; standards are gate-validated, not openspec-validated). This mechanical gate is the required
+check CI runs and what you run locally after each task group; NO LLM is in it. The judge is a
+SEPARATE LOCAL step in the authoring loop (hard-local), not part of the CI gate.
 
 ARCHIVE + MERGE are the post-green FINISH, NOT a task group — no work follows the green gate.
 `openspec archive` merges the functional-spec deltas into openspec/specs/ (requirements survive

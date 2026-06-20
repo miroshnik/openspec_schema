@@ -10,8 +10,10 @@
 
 `npm run gate` — MUST exit 0 before a change is complete, and is run after every task group
 during the change (not only at the end). It reads the CHANGE (the functional-spec delta + the
-`standards/` records + test markers + git) and runs PRE-archive. Runs the steps in order, failing
-on the first red; the judge runs last and is non-blocking in CI.
+`standards/` records + test markers + git) and runs PRE-archive. Steps 1-6 are the MECHANICAL gate
+— deterministic, no LLM — and are what CI runs as the required check; they run locally too. The
+judge (step 7) is a SEPARATE LOCAL in-loop step (hard-local), not part of the CI gate. Runs the
+steps in order, failing on the first red.
 
 `package.json`:
 
@@ -70,10 +72,12 @@ on the first red; the judge runs last and is non-blocking in CI.
    (Purpose + Requirements, each requirement a literal SHALL/MUST + ≥1 `#### Scenario:`) are hard
    errors regardless.
 
-7. **Judge (tier: judge clauses)** — `tsx scripts/judge.ts`. Locally (`--mode=local`): BLOCKING —
-   do not close a task with an `open` suspect. In CI (`--mode=print`): SOFT — post suspects as PR
-   annotations, never auto-fail. (This change introduces no judge-tier clause, but the step is
-   always wired.)
+7. **Judge (tier: judge clauses)** — `tsx scripts/judge.ts --mode=local`. A LOCAL in-loop reviewer
+   (hard-local), NOT a CI step: the authoring loop runs it for tier-judge clauses and does not close
+   a task with an `open` suspect (resolve it, or mark it justified with a pointer to the standard's
+   rationale log). It surfaces suspects + standard-candidates for the un-mechanizable part; it has
+   no verdict — a human decides, and ratifies at PR review. (This change introduces no judge-tier
+   clause, but the step is always wired locally.)
 
 ## Traceability marker
 

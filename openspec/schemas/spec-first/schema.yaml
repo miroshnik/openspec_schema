@@ -22,7 +22,7 @@
 
 name: spec-first
 version: 1
-description: Spec-as-source-of-truth flow — functional capabilities + standards-as-living-records + gate + judge (hard-local / soft-CI)
+description: Spec-as-source-of-truth flow — functional capabilities + standards-as-living-records + mechanical gate (CI) + a local in-loop judge
 
 artifacts:
   - id: proposal
@@ -68,8 +68,9 @@ artifacts:
       surface needs the same rule, or a reviewer flags it). A standard is a rule that has OUTGROWN
       one capability; until then it lives as spec behavior — you do not standardize on a hunch.
       design DECIDES; the `standard` artifact AUTHORS the standards/ record (writing the standard
-      here would invert #0). Every CREATE/REVISE is surfaced for human sign-off at PR review —
-      never self-merge a standards change. For each clause RECORD whether its test will be REUSED
+      here would invert #0). Every CREATE/REVISE touches a standards/ file, so a mechanical check
+      (git diff touches standards/) flags the change in the diff and the human reviewer RATIFIES it
+      at PR review — never self-merge a standards change. For each clause RECORD whether its test will be REUSED
       or newly AUTHORED; the full resolve-then-author mechanics live in tasks.
 
   - id: standard
@@ -107,7 +108,8 @@ artifacts:
       the projection taking whatever form the stack uses for THAT scenario — unit/e2e/property/
       contract test, type-level check, runtime assertion, OR lint/AST rule (lint is just one option,
       not the default); behavioral → executable test, structural → static analysis; mechanize first;
-      judge = focused review of the un-mechanizable part, hard locally / soft in CI). RESOLVE or
+      judge = focused review of the un-mechanizable part, a LOCAL in-loop reviewer
+      (hard-local) — not a CI job; CI is mechanical-only and the human ratifies). RESOLVE or
       AUTHOR its TEST (functional scenario → a behavioral test; standard@mechanical → a test that
       the enforcer flags the `violates` example and passes the `conforms` one; standard@judge →
       register the runnable judge check) with a `@spec <capability-or-standard>/<requirement>/<scenario>`
@@ -134,8 +136,11 @@ artifacts:
       # resolves to (mechanical lint/AST/test ⇒ mechanical; registered judge run ⇒ judge) and FAILS
       # on mismatch.
       # GATE, AS THE LAST GROUP: the LAST task group runs the project gate (project.md; templates/gate.md)
-      # green — the full suite + coverage + regression + `validate --strict` (functional specs) + judge
-      # (hard local, soft CI). The gate reads the CHANGE: deltas + standards/ + tests + suite + git —
+      # green — the MECHANICAL gate: the full suite + org-standards integrity + coverage + regression +
+      # `validate --strict` (functional specs). That mechanical gate is what CI runs as the required
+      # status check (deterministic, no LLM) AND what you run locally after each task group. The judge
+      # is a SEPARATE LOCAL step in the authoring loop (hard-local) — not part of the CI gate. The gate
+      # reads the CHANGE: deltas + standards/ + tests + suite + git —
       # everything exists pre-archive. THEN archive + merge is the FINISH (not a task group with work
       # after it): "openspec archive" merges the functional-spec deltas into openspec/specs/ and moves
       # the change to changes/archive/; standards/ files are committed git files (untouched by archive).
@@ -144,13 +149,15 @@ artifacts:
   # ── OPTIONAL ─────────────────────────────────────────────────────────────────
   # The judge. Runs POST-apply (it judges the implemented diff); modeled as
   # requires:[tasks] because the DAG can't depend on the apply phase directly.
-  # Re-runnable — regenerate each run. HARD locally (blocks closing a task with an
-  # open suspect), SOFT in CI (posts suspects, never reds the build). The CI hard
-  # gate stays external: mechanical checks + coverage + regression + `validate --strict`.
+  # Re-runnable — regenerate each run. A LOCAL in-loop reviewer (hard-local): the
+  # authoring loop runs it and won't close a task with an open suspect. It is NOT a
+  # CI job and NOT a CI gate step. The required CI check is the MECHANICAL gate:
+  # the suite + org-standards integrity + coverage + regression + `validate --strict`
+  # (deterministic, no LLM). The human ratifies the un-mechanizable part at PR review.
   - id: judge
     generates: judge-report.md
     template: judge.md
-    description: The judge — required in-loop reviewer (hard local, soft CI); surfaces suspects + standard-candidates, no CI verdict
+    description: The judge — a LOCAL in-loop reviewer (hard-local), not a CI job; surfaces suspects + standard-candidates; the human ratifies
     requires: [tasks]
 
 # ── Reference templates (not artifacts; layered in at setup) ───────────────────

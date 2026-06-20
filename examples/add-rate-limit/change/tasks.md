@@ -86,7 +86,7 @@ git) — everything it needs exists before archive.
          baseline; coverage governs. NO archived main spec is needed.
       6. `openspec validate --strict` (the functional spec delta only — standards are spec-first
          artifacts, not OpenSpec specs);
-      7. judge (tier-judge clauses) — none here; soft in CI regardless.
+      7. judge (tier-judge clauses) — none here; the judge is a local in-loop step, not a CI check.
 - [ ] Confirm the gate is GREEN. (Before this group it is RED — see README: the new standard's
       check-test isn't wired yet AND the AST rule, once landed, flags the 3 existing unlimited
       handlers.)

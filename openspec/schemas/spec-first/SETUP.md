@@ -166,9 +166,11 @@ If they don't, the prose isn't wired and the schema is inert. (Verified against 
 
 Nothing in spec-first is enforced by `openspec` itself — `validate`/`archive` have no
 coverage/test-per-spec/gate primitive, and standards live outside `openspec/` entirely. The teeth
-are external. Paste `templates/gate.md` into `openspec/project.md` and wire a single command that
-runs, PRE-archive (everything it reads — functional-spec deltas, `standards/`, tests, the full
-suite, git — exists before archive):
+are external. The gate is the deterministic, MECHANICAL gate — steps 1–6 below, no LLM. It is what
+CI runs as the required status check (cheap, reproducible, needs no API keys) AND what you run
+locally after each task group. Branch protection requires THIS check. Paste `templates/gate.md`
+into `openspec/project.md` and wire a single command that runs, PRE-archive (everything it reads —
+functional-spec deltas, `standards/`, tests, the full suite, git — exists before archive):
 
 1. the full project check/test suite (regression guard — the WHOLE suite, not just this
    change's checks);
@@ -193,9 +195,14 @@ suite, git — exists before archive):
    each requirement a literal SHALL/MUST + ≥1 Scenario) are HARD errors that fail even without it.
    (`## Why` < 50 and > 10 deltas do NOT fail strict in 1.4.1 — add those as your own grep if you
    want them.);
-7. the **judge** for tier-`judge` clauses — blocking locally, soft (post suspects) in CI.
+Steps 1–6 ARE the mechanical gate. The **judge** for tier-`judge` clauses is a SEPARATE LOCAL step
+in the authoring loop — a local in-loop reviewer (hard-local): the loop runs it and won't close a
+task with an open suspect (resolve it, or mark it justified with a pointer to the standard's
+Rationale log). It is NOT a CI job and NOT a step in the gate CI runs; CI stays mechanical-only and
+the human ratifies the un-mechanizable part at PR review.
 
-Run it after every task group during a change, and require it green as the LAST task group —
+Run the mechanical gate after every task group during a change, and require it green as the LAST
+task group —
 everything it reads exists pre-archive. Implement the coverage + regression checks once per
 project; they key off the traceability marker (`@spec <capability-or-standard>/<requirement>/<scenario>`
 by default — one per scenario a test projects; a check covering conforms AND violates carries two).
@@ -282,7 +289,12 @@ Modeling the judge as an artifact uses file-existence-as-state for something
 re-runnable — the report is regenerated each run, not written once. It works, but
 if that bothers you, omit `judge` from `schema.yaml` and run the judge as a
 hand-placed skill (`.claude/skills/`) or via the verify action. Either way its posture
-is the same: HARD locally (the authoring loop won't close a task with an unresolved
-suspect), SOFT in CI (it posts suspects, a human triages). The CI hard gate stays the
-external mechanical checks + standards validation + coverage + regression +
+is the same: a LOCAL in-loop reviewer (hard-local) — the authoring loop won't close a
+task with an unresolved suspect (resolve it, or mark it justified with a pointer to the
+standard's Rationale log). It is NOT a CI job: CI runs only the deterministic, mechanical
+gate (no LLM, no API keys, reproducible), and the human ratifies the un-mechanizable part
+at PR review and MAY run the judge on demand. A team that wants LLM suspects posted on PRs
+MAY add their own non-required judge-annotation job, but it is not shipped by default. The
+required CI check stays the mechanical gate — the project suite + org-standards integrity +
+standards validation + coverage + regression +
 `openspec validate --strict` — a non-deterministic verdict never reds a shared build.

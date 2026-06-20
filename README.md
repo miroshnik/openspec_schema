@@ -52,9 +52,10 @@ heads or a wiki nobody reads. **spec-first** makes both first-class:
   test, or a lint/AST rule) — a behavioral scenario typically to an executable test, a purely
   structural rule MAY project to a lint/AST check.
 - A single **gate** must be green before a change completes (full suite + org-integrity +
-  coverage + regression + `validate --strict` + judge).
-- What no machine can check, an **LLM judge** reviews — hard locally, soft in CI (it never
-  reds a shared build).
+  coverage + regression + `validate --strict`). The gate CI runs is mechanical-only; the judge
+  is a separate local step.
+- What no machine can check, an **LLM judge** surfaces — a LOCAL in-loop reviewer (hard-local);
+  it is not a CI job. CI is mechanical-only; the human ratifies at review.
 - A **standard** is a cross-cutting rule that binds every surface it governs across the *whole
   project* — enforced by the gate, not filed in a wiki. (It can optionally be shared across
   projects too — a bonus, below — but that is not the point.)
@@ -153,9 +154,9 @@ NOT validated by `openspec validate` — they are spec-first artifacts, not Open
 - **mechanical** — AST / lint / type / test. The hard-binding tier. Mechanize first.
 - **judge** — focused per-standard LLM review of the part a machine cannot catch (intent /
   naming / ergonomic fit). REQUIRED to RUN and SURFACE (cannot be skipped), but it does NOT
-  self-enforce: **hard locally** (blocks closing the task), **soft in CI** (posts suspects),
-  BINDING only when a human ratifies its suspects at PR review. Every judge-tier standard MUST
-  register a runnable judge check.
+  self-enforce: it is a **LOCAL in-loop reviewer (hard-local)** that blocks closing the task,
+  and is NOT a CI job. CI is mechanical-only. The judge is BINDING only when a human ratifies its
+  suspects at PR review. Every judge-tier standard MUST register a runnable judge check.
 
 Each rule is a PAIR: the authoring guidance the agent follows (the standard's prose) + an external
 mechanical check the project's **gate** runs. OpenSpec has no native
@@ -206,8 +207,9 @@ The full git lifecycle (from `templates/governance.md`):
 4. ARCHIVE — openspec archive <id> → merges the functional-spec DELTAS into openspec/specs/
              (requirements survive natively) and moves the change to changes/archive/;
              standards/ files are plain committed git files, UNTOUCHED by archive.
-5. PR      — open the PR from change/<id>. CI runs the gate (soft judge posts suspects).
-6. REVIEW  — a human approves, ratifying any standards CREATE/REVISE (and the record as source of truth).
+5. PR      — open the PR from change/<id>. CI runs the mechanical gate (required check).
+6. REVIEW  — a human reviewer ratifies: reads the diff, judges the un-mechanizable part, signs off
+             on any standards CREATE/REVISE (and the record as source of truth); MAY run the judge on demand.
 7. MERGE   — squash-merge to the default branch. Direct pushes are blocked at the host.
 ```
 
@@ -241,11 +243,12 @@ Then for each cross-cutting decision:
 project check/test already covers it) or newly AUTHORED. Resolve against existing project checks
 first; only author when none fits.
 
-**RATIFICATION.** Every CREATE / REVISE is surfaced for human sign-off at PR review: the soft-CI
-judge posts "standards-changed" suspects and a human approves the PR. Never self-merge a
-standards change — standards bind the whole project. The judge ALSO surfaces standard-CANDIDATES:
-a recurring local pattern that should be enforced project-wide, flagged for promotion (a
-standard-candidate, like a standards-changed suspect) — the DEFER-to-CREATE ratchet.
+**RATIFICATION.** Every CREATE / REVISE is surfaced for human sign-off at PR review: a mechanical
+check (deterministic — `git diff` touches `standards/`) flags the standards change in the diff, and
+the human reviewer ratifies it at PR review. Never self-merge a standards change — standards bind
+the whole project. The local judge ALSO surfaces standard-CANDIDATES: a recurring local pattern that
+should be enforced project-wide, flagged for promotion (a standard-candidate, like a
+standards-changed suspect) — the DEFER-to-CREATE ratchet.
 
 ---
 
@@ -257,7 +260,9 @@ It is a SINGLE command that both CI and the local authoring loop run: **continuo
 change, and required green as the LAST task group before the change is complete** — PRE-archive,
 when the change (deltas + `standards/` + tests + git) is all on disk.
 
-It runs **six steps**, fails on the first red for steps 1–5, and runs the judge last:
+It runs **six mechanical steps** and fails on the first red. These steps are the MECHANICAL gate —
+deterministic, no LLM — run in CI as the required check AND locally after each task group. The judge
+is a SEPARATE LOCAL step in the authoring loop (hard-local), not part of the CI gate (see below):
 
 1. **Project mechanical checks** — `<lint/type/test command>`. The FULL existing suite, not only
    this change's checks. (Governance standards' enforcer commands run here too, like any standard
@@ -288,12 +293,16 @@ It runs **six steps**, fails on the first red for steps 1–5, and runs the judg
 6. **`openspec validate --strict`** — exit 0 over the functional-spec deltas. (Structural rules
    are HARD errors even without `--strict`; `## Purpose` < 50 chars fails only under `--strict` —
    see the 1.4.1 facts below.)
-7. **Judge** (tier: judge standards) — `<judge command>`: an agent in print mode reviewing the
-   governed scope for the part no mechanical check covers.
-   - **Locally:** BLOCKING. Do not close a task while the judge has an `open` suspect — fix it,
-     or mark it `justified` with a pointer to the standard's Rationale log.
-   - **In CI:** SOFT. Post suspects as PR annotations / a "human-review-needed" flag. NEVER
-     auto-fail the build on a non-deterministic verdict.
+**The judge — a SEPARATE LOCAL step, not part of the CI gate** (tier: judge standards) —
+`<judge command>`: an agent in print mode reviewing the governed scope for the part no mechanical
+check covers. It runs in the authoring loop, surfaces suspects (no verdict — a human decides), and
+is NOT a CI job.
+   - **Hard-local:** BLOCKING in the loop. Do not close a task while the judge has an `open`
+     suspect — fix it, or mark it `justified` with a pointer to the standard's Rationale log.
+   - **At PR review:** the human reviewer ratifies the un-mechanizable part themselves, and MAY run
+     the judge on demand. CI itself stays mechanical-only — no LLM, no non-deterministic verdict
+     reds a shared build. (A team MAY add its own non-required judge-annotation job that posts
+     suspects on PRs, but that is an opt-in add-on, not shipped by default.)
 
 **Green-as-last-group.** The gate runs throughout the change so breakage surfaces early; the
 FINAL task group is "the full gate green," and it MUST be green before the change is complete —
@@ -497,9 +506,10 @@ as the test's fixtures, Rationale log); the **tasks** that resolve-then-author e
 and the per-scenario `@spec <capability-or-standard>/<requirement>/<scenario>` marker; the **gate**
 run continuously and green as the last group — PRE-archive; and **archive as the finish** (the
 functional delta merges into `openspec/specs/`, the `standards/` file is left untouched). It also
-shows **ratification** — the standard CREATE is surfaced at PR review (the soft-CI judge posts a
-"standards-changed" suspect; this change carries no judge-tier standard, so the judge step runs and
-finds none). Read it alongside this README to see every section above in one concrete change.
+shows **ratification** — the standard CREATE is surfaced at PR review (a mechanical check flags the
+`standards/` change in the diff; the human reviewer ratifies it; this change carries no judge-tier
+standard, so the local judge runs in the loop and finds none). Read it alongside this README to see
+every section above in one concrete change.
 
 ## What's inside
 
@@ -516,7 +526,7 @@ finds none). Read it alongside this README to see every section above in one con
 │       ├── gate.md                 # the gate block, embedded by project.md
 │       ├── governance.md           # seed standards: changes-via-openspec, branch-per-change, change-lifecycle
 │       ├── project.md              # the project contract: gate + org-pin + branch-protection + adoption
-│       └── judge.md                # the judge template (hard local, soft CI)
+│       └── judge.md                # the judge template (a LOCAL in-loop reviewer, hard-local; CI is mechanical; the human ratifies)
 └── examples/
     └── add-rate-limit/             # a complete change walked end-to-end through the flow
 ```

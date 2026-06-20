@@ -58,8 +58,9 @@ that enforced?):
   yet written — so it has already outgrown one capability. You do not standardize on a hunch; here
   the class is concrete.
 
-**RATIFICATION** — this CREATE is surfaced for human sign-off at PR review (the soft-CI judge
-posts a "standards-changed" suspect; a human approves). We do not self-merge a standards change.
+**RATIFICATION** — this CREATE is surfaced for human sign-off at PR review (a mechanical check
+flags the standards change in the diff — `git diff` touches `standards/`, no LLM needed — so the
+human reviewer ratifies it at PR review). We do not self-merge a standards change.
 
 ## The limiter (functional capability)
 

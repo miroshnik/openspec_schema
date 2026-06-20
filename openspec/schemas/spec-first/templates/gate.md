@@ -3,9 +3,12 @@
 spec-first references "the project's **gate**" abstractly so the schema stays
 stack-agnostic. THIS is where you make it concrete for your stack. The gate is
 EXTERNAL to OpenSpec: `openspec validate --strict` is only one of its inputs.
-Everything below is a mechanical check you wire into a SINGLE command that both
+Everything below is a MECHANICAL check you wire into a SINGLE command that both
 CI and the local authoring loop run — continuously during a change, and as the
-LAST TASK GROUP on the CHANGE before archive.
+LAST TASK GROUP on the CHANGE before archive. The gate is MECHANICAL-ONLY:
+deterministic, cheap, reproducible, no LLM. CI runs THIS as the required status
+check. The judge is a SEPARATE LOCAL step in the authoring loop (hard-local),
+not a CI gate step — see below.
 
 The gate reads the CHANGE, pre-archive: the functional-spec deltas, the
 top-level `standards/` files, the test markers, the full suite, and git. It runs
@@ -20,10 +23,12 @@ Copy the block below into `openspec/project.md` and replace the `<…>` slots.
 
 `<gate command>` — MUST exit 0 before a change is archived, and is run after every
 task group during the change (not only at the end). It runs steps 1-5 in order and
-fails on the first red; step 6 (the judge) runs last and is non-blocking in CI (see
-step 6). Locally the loop treats an open judge suspect as not-yet-green too. The gate
-runs on the CHANGE as the LAST TASK GROUP — everything it reads (deltas + `standards/`
-+ tests + git) exists pre-archive.
+fails on the first red. These five steps are the MECHANICAL gate — deterministic,
+no LLM — run in CI as the required status check AND locally after each task group.
+The judge is NOT one of these steps; it is a separate LOCAL step in the authoring
+loop (hard-local), described after the gate. The gate runs on the CHANGE as the
+LAST TASK GROUP — everything it reads (deltas + `standards/` + tests + git) exists
+pre-archive.
 
 1. Project mechanical checks — `<lint/type/test command>`. The FULL existing suite,
    not only this change's checks. (Regression guard: greening your own checks while
@@ -93,12 +98,23 @@ runs on the CHANGE as the LAST TASK GROUP — everything it reads (deltas + `sta
    the repo is brought strict-clean once (SETUP Step 0), so an unrelated change doesn't red on
    legacy well-formedness.
 
-6. Judge (standards with `tier: judge`) — `<judge command>`: an agent in print mode reviewing the
-   governed scope for the part no mechanical check covers.
-   - Locally (authoring loop): BLOCKING. Do not close a task while the judge has an `open`
-     suspect — fix it, or mark it `justified` with a pointer to the standard's Rationale log.
-   - In CI: SOFT. Post suspects as PR annotations or a "human-review-needed" flag. NEVER
-     auto-fail the build on a non-deterministic verdict (see templates/judge.md).
+The five steps above are the whole mechanical gate. The judge below is NOT a gate step and does
+NOT run in CI.
+
+## The judge — a LOCAL in-loop reviewer (hard-local), not a CI step
+
+Judge (standards with `tier: judge`) — `<judge command>`: an agent in print mode reviewing the
+governed scope for the part no mechanical check covers. It SURFACES suspects + standard-candidates
+for the un-mechanizable part; it gives no verdict — a human decides.
+- It runs in the AUTHORING LOOP, locally (hard-local): BLOCKING there. Do not close a task while
+  the judge has an `open` suspect — fix it, or mark it `justified` with a pointer to the standard's
+  Rationale log.
+- It is NOT a CI job and NOT a gate step that runs in CI. CI stays mechanical-only (deterministic,
+  no API keys). A team MAY add their own NON-required judge-annotation job that posts LLM suspects
+  on PRs, but it is not shipped by default (see templates/judge.md and the example ci.yml).
+- RATIFICATION is the human reviewer at PR review: they read the diff and judge the un-mechanizable
+  part (intent, naming, ergonomics, spirit) themselves, and MAY run the judge on demand. That is
+  where trust in the source is established.
 
 ## Traceability marker
 

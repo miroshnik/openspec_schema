@@ -26,7 +26,7 @@ Copy the body below into `standards/<name>.md` and fill the angle-bracket slots.
 ```
 ---
 governs:    <scope — the surfaces/paths/layers this rule applies to; this is what makes it cross-cutting>
-tier:       mechanical | judge        # machine-checkable-at-all, NOT the mechanism. mechanical = a machine can decide it (the projection is an executable test / type check / runtime assertion / lint/AST rule — whatever the stack uses; hard). judge = needs-human-judgment, focused LLM review (hard locally, soft in CI). NO advisory tier. GATE-VERIFIED: the gate asserts this tier matches what the rule's test resolves to and fails on mismatch.
+tier:       mechanical | judge        # machine-checkable-at-all, NOT the mechanism. mechanical = a machine can decide it (the projection is an executable test / type check / runtime assertion / lint/AST rule — whatever the stack uses; hard). judge = needs-human-judgment, a LOCAL in-loop review (hard-local; CI is mechanical, the human ratifies). NO advisory tier. GATE-VERIFIED: the gate asserts this tier matches what the rule's test resolves to and fails on mismatch.
 ---
 
 # <Standard name>
