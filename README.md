@@ -1,7 +1,5 @@
 # spec-first — an OpenSpec schema
 
-> 🇷🇺 [Русская версия](README.ru.md)
-
 **Principle #0 — the spec is the single source of truth.** Code, tests, checks, migrations,
 and docs are all *projections* of the durable record: a test projects a scenario — the scenario
 (Given/When/Then, or conforms/violates) is the canonical, stack-agnostic statement of the
