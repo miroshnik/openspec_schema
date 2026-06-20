@@ -1,21 +1,16 @@
----
-# FUNCTIONAL capability — a component's behavior. NO `governs:` (that field is what
-# marks a STANDARD). Frontmatter CORE lives here so archive preserves it (above the
-# delta tokens / ## Requirements) and so the gate's coverage can read it regardless of
-# body shape. CORE is just test: + tier: here — the authoritative one-liner IS the
-# `### Requirement:` SHALL/MUST clause below; there is no separate invariant field.
-test:       test/rate-limiter/withRateLimit.test.ts  # MANDATORY — projects the scenarios below; each test case tagged `@spec rate-limiter/<requirement>/<scenario>` (one marker per scenario). The limiter (src/middleware/withRateLimit.ts) is the code under test, named in the test + prose, not a frontmatter field.
-tier:       mechanical
-# governs: absent on purpose — this is a functional capability, not a standard.
-# adoption: omitted — this spec is active (presence of `adoption: legacy` would exempt a
-#           pre-existing spec from coverage until first modified; this one is new).
----
-
-# This is a DELTA, authored under change/add-rate-limit. It is NOT the built main spec.
-# Tokens are EXACT and load-bearing: `## ADDED Requirements` (level-2), `### Requirement:`
-# (level-3), `#### Scenario:` (level-4, exactly four hashes), literal SHALL/MUST in the body.
-# On FIRST archive this delta ALONE rebuilds openspec/specs/rate-limiter/spec.md — see
-# examples/add-rate-limit/built/rate-limiter/spec.md for the re-applied result.
+# FUNCTIONAL capability — a PURE native OpenSpec spec delta. NO spec-first frontmatter at all. A
+# functional capability survives archive NATIVELY: the `## ADDED Requirements` delta ALONE rebuilds
+# openspec/specs/rate-limiter/spec.md.
+#
+# This is a DELTA, authored under changes/add-rate-limit. It is NOT the built main spec. Tokens
+# are EXACT and load-bearing: `## ADDED Requirements` (level-2), `### Requirement:` (level-3),
+# `#### Scenario:` (level-4, exactly four hashes), literal SHALL/MUST in the body. The scenarios
+# below ARE the contract; the limiter's tests are their stack-local projection (one `@spec`
+# marker per scenario). See examples/add-rate-limit/built/rate-limiter/spec.md for the built form.
+#
+# `## Purpose`: a brand-new spec's first archive stubs Purpose "TBD … Update Purpose after
+# archive" — filling it is OpenSpec's OWN native step on the built spec. (The built example shows
+# it filled.)
 
 ## ADDED Requirements
 

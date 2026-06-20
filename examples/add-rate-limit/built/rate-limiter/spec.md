@@ -1,13 +1,10 @@
----
-# Frontmatter CORE — re-applied AFTER first archive (the CREATE archive dropped it). This is
-# what openspec/specs/rate-limiter/spec.md looks like once re-applied. Functional capability →
-# no `governs:`. CORE is test: + tier: only; the `### Requirement:` SHALL/MUST clause below is
-# the authoritative one-liner (no separate invariant field). The gate's re-apply sub-check fails
-# this built spec if test: is missing, so a forgotten re-apply cannot silently pass coverage.
-test:       test/rate-limiter/withRateLimit.test.ts   # each test case tagged `@spec rate-limiter/<requirement>/<scenario>` (one marker per scenario). Code under test: src/middleware/withRateLimit.ts (named here + in prose, not a frontmatter field).
-tier:       mechanical
-# adoption: omitted — active spec.
----
+# This is openspec/specs/rate-limiter/spec.md after `openspec archive add-rate-limit` — a PURE
+# native OpenSpec spec: a `## Purpose` + a `## Requirements` section, no spec-first frontmatter.
+# The `## ADDED Requirements` delta rebuilt `## Requirements` verbatim. Purpose below is FILLED —
+# the first archive stubs it "TBD … Update Purpose after archive" and filling it is OpenSpec's OWN
+# native post-archive step. Coverage reads the scenarios here directly; the `rate-limiter` tests
+# carry the matching `@spec` markers. The standard that requires this limiter lives, untouched by
+# archive, at examples/add-rate-limit/standards/rate-limit-policy.md.
 
 # Rate limiter
 

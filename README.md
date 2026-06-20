@@ -1,15 +1,18 @@
 # spec-first — an OpenSpec schema
 
+> 🇷🇺 [Русская версия](README.ru.md)
+
 **Principle #0 — the spec is the single source of truth.** Code, tests, checks, migrations,
-and docs are all *projections* of specs: a test projects a scenario — the scenario (Given/When/Then,
-or conforms/violates) is the canonical, stack-agnostic statement of the property, and the test is
-its local, regenerable artifact (when the scenario changes, RE-PROJECT its test). The projection's
-FORM is stack-specific — a unit / e2e / property / contract / type-level / runtime-assertion test,
-or a lint/AST rule — whatever that stack uses to check THAT scenario. A migration projects the
-change, code is born in `apply` from tasks (which project from specs). On any divergence the spec
-is authoritative and changes FIRST — you never alter a derivative behind its spec's back.
-Everything else in this README — the two spec shapes, the frontmatter CORE, the flow order, the
-per-spec `test:`, the gate, the all-via-flow governance — exists to enforce that one rule.
+and docs are all *projections* of the durable record: a test projects a scenario — the scenario
+(Given/When/Then, or conforms/violates) is the canonical, stack-agnostic statement of the
+property, and the test is its local, regenerable artifact (when the scenario changes, RE-PROJECT
+its test). The projection's FORM is stack-specific — a unit / e2e / property / contract /
+type-level / runtime-assertion test, or a lint/AST rule — whatever that stack uses to check THAT
+scenario. A migration projects the change; code is born in `apply` from tasks (which project from
+the record). On any divergence the record is authoritative and changes FIRST — you never alter a
+derivative behind its spec's back. Everything else in this README — the two shapes (functional
+spec, standard), the flow order, the per-scenario test, the gate, the all-via-flow governance —
+exists to enforce that one rule.
 
 > **An OpenSpec flow with checks you can trust your generation against, plus standards that
 > are mandatory across the whole project — enforced, not filed in a wiki.**
@@ -20,11 +23,11 @@ per-spec `test:`, the gate, the all-via-flow governance — exists to enforce th
 
 1. [The problem](#the-problem)
 2. [What the gate does and doesn't prove (honesty)](#what-the-gate-does-and-doesnt-prove)
-3. [The model — two shapes, one mechanism](#the-model--two-shapes-one-mechanism)
+3. [The model — two shapes](#the-model--two-shapes)
 4. [The flow & lifecycle](#the-flow--lifecycle)
 5. [The standards loop](#the-standards-loop)
 6. [The gate](#the-gate)
-7. [Tests on every spec, coverage, regression](#tests-on-every-spec-coverage-regression)
+7. [Tests, coverage, regression](#tests-coverage-regression)
 8. [Empirical OpenSpec 1.4.1 facts](#empirical-openspec-141-facts)
 9. [Governance — make the flow the only path](#governance--make-the-flow-the-only-path)
 10. [Brownfield adoption](#brownfield-adoption)
@@ -44,11 +47,12 @@ AI agents generate code fast — but you can only trust what you can **check**, 
 that actually define a codebase (how it does auth, errors, logging, layering) live in people's
 heads or a wiki nobody reads. **spec-first** makes both first-class:
 
-- **Functional behavior** *and* **cross-cutting standards** live as specs under `specs/`.
-- **Every spec carries a mandatory `test:`** — the single enforcement ref: each scenario projects
-  to a test whose FORM is the stack's choice (unit / e2e / property / contract / type-level /
-  runtime-assertion test, or a lint/AST rule) — a behavioral scenario typically to an executable
-  test, a purely structural rule MAY project to a lint/AST check.
+- **Functional behavior** lives as pure OpenSpec specs under `openspec/specs/`; **cross-cutting
+  standards** live as self-contained living records under top-level `standards/`.
+- **Every scenario projects to a test** — each `#### Scenario:` becomes a stack-specific test whose
+  FORM is the stack's choice (unit / e2e / property / contract / type-level / runtime-assertion
+  test, or a lint/AST rule) — a behavioral scenario typically to an executable test, a purely
+  structural rule MAY project to a lint/AST check.
 - A single **gate** must be green before a change completes (full suite + org-integrity +
   coverage + regression + `validate --strict` + judge).
 - What no machine can check, an **LLM judge** reviews — hard locally, soft in CI (it never
@@ -66,22 +70,22 @@ inherits the delta-spec format that `archive` / `sync` rely on.
 
 This is the honest line, and it is the whole point of the design:
 
-**Green means** spec, test, and code are CONSISTENT, and that no scenario silently regressed.
-It makes the spec the thing you *review*. It does NOT prove the spec is correct or its test
-strong: the same agent may author spec, scenario, check, and test, so a hollow self-consistent
-spec also goes green. The spec becomes trustworthy only when a human **ratifies** it at PR
-review. The gate makes divergence-from-the-spec mechanical; **ratification** makes the spec
-itself authoritative.
+**Green means** the spec, its standards, the tests, and the code are CONSISTENT, and that no
+scenario silently regressed. It makes the spec the thing you *review*. It does NOT prove the spec
+is correct or its test strong: the same agent may author spec, standard, scenario, and test, so a
+hollow self-consistent spec also goes green. The spec becomes trustworthy only when a human
+**ratifies** it at PR review. The gate makes divergence-from-the-record mechanical;
+**ratification** makes the record itself authoritative.
 
 So the trust split is:
 
 | What | Who/what guarantees it |
 | --- | --- |
-| Projections are consistent with the spec | the gate (mechanical) |
+| Projections are consistent with the record | the gate (mechanical) |
 | No scenario silently disappeared | the gate (regression diff) |
 | Every scenario is actually projected | the gate (coverage) |
 | The un-mechanizable part fits the spirit | the judge (surfaces; human ratifies) |
-| **The spec itself is true / its tests are strong** | **a human, at PR approval** |
+| **The spec/standard itself is true / its tests are strong** | **a human, at PR approval** |
 
 Coverage proves each SCENARIO is LINKED to a marked, wired-in test that RUNS — it cannot prove the
 test faithfully or non-trivially exercises the scenario (an empty `it()` with the right `@spec`
@@ -90,63 +94,61 @@ ratification at PR review checks.
 
 ---
 
-## The model — two shapes, one mechanism
+## The model — two shapes
 
-One mechanism, **two shapes of spec**, distinguished by a single frontmatter field, `governs:`:
+spec-first has **two shapes of durable record**, and the design point is *where they live*:
+durable spec-first content lives OUTSIDE the change folder, so `openspec archive` never strips it.
 
-- **Functional capability** — a component's behavior. Body: typed interface (provides/requires)
-  + behavioral scenarios (Given/When/Then). The `### Requirement:` SHALL/MUST clauses ARE the
-  authoritative properties (a cross-scenario property, if named, lives in prose — not frontmatter).
-  **Its scenarios become its tests.** No `governs:`.
-- **Standard** (`governs:` present) — a cross-cutting rule the whole project obeys (a coding
-  convention, a security/perf/observability bar, an architectural decision). It is an *ordinary*
-  spec under `specs/` — same delta format, same flow — made cross-cutting by `governs:`. Body:
-  the rule as a real `### Requirement:` (SHALL/MUST + a **conforms** scenario AND a **violates**
-  scenario) + conforms/violates examples (which double as the test fixtures).
-  Architectural standards additionally carry a full **ADR** (`## Decision Record`: Status /
-  Context / Decision / Consequences / Alternatives) plus a trailing `## Rationale log` that
-  accretes across revisions. **Its conforms/violates scenarios projected into a test (mechanical)
-  or its registered judge run (judge) is its `test:`** — the concrete enforcer (a unit/contract/
-  type/runtime test, or a lint/AST rule, whatever the stack uses to check the rule) is named in
-  the test body and the prose, not in frontmatter.
+- **Functional capability** — a **PURE native OpenSpec spec** at
+  `openspec/specs/<cap>/spec.md`. A `## Purpose` section + a `## Requirements` section
+  (`### Requirement:` with literal SHALL/MUST + `#### Scenario:` Given/When/Then). It is an
+  ordinary OpenSpec spec, so it survives archive *natively*. Its `## ADDED Requirements` delta
+  rebuilds the main spec on archive, and its scenarios become its tests (tied via `@spec`
+  markers). A brand-new spec is archived with OpenSpec's own stubbed Purpose — "TBD … Update
+  Purpose after archive"; you fill that in after archive.
+- **Standard** — a **self-contained living file** at top-level `standards/<name>.md` (NOT an
+  OpenSpec spec, a committed git file that archive does not touch). Everything about the standard —
+  scope, tier, the decision and why, the rule, its scenarios, its amendment history — lives HERE,
+  always visible in one file. Shape:
 
-Both shapes obey the SAME hard OpenSpec contract every spec has: `## Purpose` + `## Requirements`,
-≥1 requirement carrying literal `SHALL`/`MUST`, ≥1 `#### Scenario:`.
+  ```
+  ---
+  governs: <scope>            # what surfaces this rule binds
+  tier:    mechanical | judge # machine-checkable vs needs-human-judgment
+  ---
+  # <Standard name>
 
-### The frontmatter CORE
+  ## Decision Record          # the ADR
+  Status: <proposed | accepted | superseded>
+  Context: …
+  Decision: …
+  Consequences: …
+  Alternatives considered: …
 
-Both shapes carry the same machine-read CORE in **frontmatter** (above `## Purpose`, so archive
-preserves it; fixed place so the gate and design-retrieval find it regardless of body shape):
+  ## Rule
+  ### Requirement: <name>
+  The system SHALL <normative clause — literal SHALL/MUST>.
+  #### Scenario: conforms
+  … an example that obeys the rule (a test fixture) …
+  #### Scenario: violates
+  … an example that breaks the rule (a test fixture) …
 
-```
-test:       <ref to the test(s) that project this spec's scenarios — the coverage key>  # MANDATORY
-tier:       mechanical | judge          # machine-checkable vs needs-judgment; gate-VERIFIED against what test: resolves to
-governs:    <scope>                     # standards only; PRESENCE marks a standard, ABSENT ⇒ functional capability
-adoption:   legacy                      # OPTIONAL — presence exempts a pre-existing spec from coverage until first modified; OMIT on active specs
-```
+  ## Rationale log
+  (<date>): <why this rule, in one or two lines>
+  ```
 
-Just four fields. `test:` is the SINGLE enforcement ref — the coverage key the gate resolves; for
-a `standard@mechanical` the concrete enforcer (a unit/contract/type/runtime test, or a lint/AST
-rule id like `eslint-plugin-local/require-rate-limit` — the stack's choice) is named in the test
-body and the spec prose, NOT a frontmatter field. There is no `check:` (folded into `test:`), no
-`invariant:` (the `### Requirement:`
-SHALL/MUST clause IS the authoritative one-liner), and no `binding:` (derived). `governs:` is the
-discriminator: its PRESENCE marks a standard; ABSENT ⇒ functional capability. `adoption:` is now
-presence-of-`legacy` (omit ⇒ active), not an enum.
+  A standard's `governs:` scope is what makes it cross-cutting. `tier` is machine-checkable
+  (mechanical) vs needs-human-judgment (judge) — it is the JUDGMENT class, NOT the mechanism. The
+  `### Requirement:` SHALL/MUST clause IS the authoritative one-liner; the concrete enforcer (a
+  unit/contract/type/runtime test, or a lint/AST rule id like
+  `eslint-plugin-local/require-rate-limit` — the stack's choice) is named in the test body and the
+  standard's prose, not in a frontmatter field. The `## Rationale log` accretes a dated line per
+  revision.
 
-These are spec-first **conventions**, not native OpenSpec fields — `validate`/`archive` never
-read them (verified on 1.4.1: a spec carrying the CORE returns `valid:true`, 0 issues under
-`--strict`). Verify your forked `validate` treats unknown frontmatter as ignorable, or the gate
-reds on `validate --strict` for every spec.
-
-**`tier` is GATE-VERIFIED, `binding` is DERIVED — neither is taken on trust.** `tier` is
-machine-checkable-at-all (mechanical) vs needs-human-judgment (judge) — it is NOT the mechanism;
-the scenario's NATURE hints at the projection CLASS (behavioral → executable test; structural →
-static analysis), but the concrete tool is stack-specific. The gate asserts the declared `tier`
-matches what `test:` resolves to (a machine-checkable test artifact ⇒ mechanical; a registered
-judge run ⇒ judge) and FAILS on mismatch — the same discipline as "binding is derived." A clause
-binds IFF its `test:` resolves; there is no `binding:` field, the coverage check operationalizes
-it.
+**RETRIEVE reads `standards/` directly; the gate reads its scenarios for coverage.** Standards are
+NOT validated by `openspec validate` — they are spec-first artifacts, not OpenSpec specs. The
+**gate** validates them: `governs:` + `tier:` present; a `### Requirement:` with literal SHALL/MUST
++ a `conforms` scenario + a `violates` scenario.
 
 ### Tiers — two, no escape hatch
 
@@ -154,13 +156,12 @@ it.
 - **judge** — focused per-standard LLM review of the part a machine cannot catch (intent /
   naming / ergonomic fit). REQUIRED to RUN and SURFACE (cannot be skipped), but it does NOT
   self-enforce: **hard locally** (blocks closing the task), **soft in CI** (posts suspects),
-  BINDING only when a human ratifies its suspects at PR review. Every judge clause MUST register
-  a runnable judge check.
+  BINDING only when a human ratifies its suspects at PR review. Every judge-tier standard MUST
+  register a runnable judge check.
 
-There is no advisory tier. Each rule is a PAIR: the authoring guidance the agent follows (set as
-the artifact's `instruction:` field in the forked schema) + an external mechanical check the
-project's **gate** runs. OpenSpec has no native `governs:`/coverage/test-per-spec/gate primitive,
-which is exactly why the teeth are external.
+Each rule is a PAIR: the authoring guidance the agent follows (the standard's prose) + an external
+mechanical check the project's **gate** runs. OpenSpec has no native
+`governs:`/coverage/test-per-scenario/gate primitive, which is exactly why the teeth are external.
 
 ---
 
@@ -169,35 +170,46 @@ which is exactly why the teeth are external.
 A change moves through the OpenSpec artifact DAG:
 
 ```
-proposal → specs → design → tasks → apply → (judge)
+proposal → {specs, design}; design → standard; {specs, standard} → tasks → (judge)
 ```
+
+Linearized for an author: `proposal → specs → design → (standard, when a cross-cutting decision
+arises) → tasks`.
 
 - **proposal** — what changes and why; plus **Affected surfaces & rollback** (design uses the
   surfaces to retrieve the standards whose `governs:` covers them).
-- **specs** — author functional capabilities AND standards. This is where standards LIVE. If
-  design's loop flagged a CREATE or REVISE, the standard spec / delta is authored *here*.
-- **design** — the technical design + the **standards loop** (below). design DECIDES standards;
-  specs AUTHORS them — writing a standard in design would invert #0 (a derivative, the recorded
-  decision, preceding its source spec).
-- **tasks** — enforcer @ tier + test-per-spec + migration + coverage + regression + the continuous
-  gate. **SOURCE-FIRST discipline (#0):** to change behavior, amend the spec/scenario FIRST (as
-  a delta), then re-project its test and code — never edit a derivative behind a scenario you
-  didn't touch.
-- **apply** — implement the tasks (inherited from the fork; tracks `tasks.md`). Code is born here.
-- **judge** — runs POST-apply (it judges the implemented diff). Optional artifact; re-runnable.
+- **specs** — author functional capabilities as pure OpenSpec specs (deltas). No frontmatter.
+- **design** — the technical design + the **standards loop** (below). design DECIDES standards.
+- **standard** — author/update the self-contained `standards/<name>.md` record, generated to
+  TOP-LEVEL `standards/` (OUTSIDE `openspec/`, so archive never touches it). **CONDITIONAL:** the
+  standard artifact is authored/updated only when the design loop flags CREATE/REVISE; otherwise a
+  no-op (no new `standards/` file). Writing the standard in design would invert #0 (a derivative,
+  the recorded decision, preceding its source record).
+- **tasks** — EVERYTHING in ONE pass: author the functional-spec deltas + the `standards/` records
+  + tests + checks + migration. The LAST TASK GROUP runs the GATE green. **SOURCE-FIRST discipline
+  (#0):** to change behavior, amend the spec/scenario (or the standard's rule) FIRST, then
+  re-project its test and code — never edit a derivative behind a scenario you didn't touch.
+- **judge** — optional artifact (`requires: [tasks]`), re-runnable; reviews the implemented diff.
+
+The gate reads the CHANGE — the functional-spec deltas + the `standards/` files + the tests + the
+full suite + git — and everything it needs exists PRE-archive. Archive is the FINISH: it merges
+the functional-spec deltas into `openspec/specs/` and moves the change to `changes/archive/`.
 
 The full git lifecycle (from `templates/governance.md`):
 
 ```
 0. (brownfield) adoption mode set — see Brownfield adoption.
 1. START   — openspec new change <id>; branch: git worktree add ../<id> -b change/<id>
-2. AUTHOR  — proposal → specs → design → tasks. design DECIDES standards; specs AUTHORS them.
-3. BUILD   — implement tasks; run the GATE after each task group (continuously) until green,
-             resolving/justifying every hard-local judge suspect.
-4. ARCHIVE — openspec archive <id> → merges delta specs into openspec/specs/, moves the change
-             to changes/archive/. Re-run the gate over the updated specs until green.
+2. AUTHOR  — proposal → specs → design → (standard, when a cross-cutting decision arises).
+3. BUILD   — tasks in ONE pass: functional deltas + standards/ records + tests + checks +
+             migration; the LAST task group runs the GATE green (it reads the change:
+             deltas + standards/ + tests + full suite + git — all pre-archive). Resolve or
+             justify every hard-local judge suspect.
+4. ARCHIVE — openspec archive <id> → merges the functional-spec DELTAS into openspec/specs/
+             (requirements survive natively) and moves the change to changes/archive/;
+             standards/ files are plain committed git files, UNTOUCHED by archive.
 5. PR      — open the PR from change/<id>. CI runs the gate (soft judge posts suspects).
-6. REVIEW  — a human approves, ratifying any standards CREATE/REVISE (and the spec as source of truth).
+6. REVIEW  — a human approves, ratifying any standards CREATE/REVISE (and the record as source of truth).
 7. MERGE   — squash-merge to the default branch. Direct pushes are blocked at the host.
 ```
 
@@ -205,27 +217,37 @@ The full git lifecycle (from `templates/governance.md`):
 
 Before writing the design, and whenever a cross-cutting decision arises:
 
-- **RETRIEVE** — pull the standards whose `governs:` matches the surfaces this change touches
-  (from the proposal). Apply them. Retrieval is first-try efficiency; the gate is the backstop
-  for misses.
+- **RETRIEVE** — read top-level `standards/` directly and pull the standards whose `governs:`
+  matches the surfaces this change touches (from the proposal). Apply them. Retrieval is first-try
+  efficiency; the gate is the backstop for misses.
 
 Then for each cross-cutting decision:
 
 - **COMPLY** — fits an existing standard → follow it.
 - **CREATE** — hits ungoverned ground → IDENTIFY the need for a new standard and specify its
-  requirement / enforcer / tier / test (and, if architectural, its Decision Record). design
-  DECIDES; specs AUTHORS the standard spec. Bias to FEW — a standard taxes every future change.
+  rule / enforcer / tier / scenarios + its Decision Record. design DECIDES; the `standard`
+  artifact AUTHORS the new `standards/<name>.md`. Bias to FEW — a standard taxes every future
+  change.
 - **REVISE** — in tension with an existing standard → decide the DELTA (what loosens / tightens /
-  carves out) and its justification; specs writes the delta and appends the standard's Rationale
-  log (v2). Distinguish comply-vs-revise honestly; loosening needs strong justification.
+  carves out) and its justification; the `standard` artifact edits the file in place and appends a
+  dated entry to the standard's Rationale log. Distinguish comply-vs-revise honestly; loosening
+  needs strong justification.
+- **DEFER** — looks cross-cutting, but bias-to-FEW says it is too early to standardize (one
+  surface; not clearly a class yet). KEEP it LOCAL — it stays the functional capability's behavior
+  (its scenarios). RECORD it as a standard CANDIDATE (a line in the proposal or design). PROMOTE
+  it later via CREATE + a migration when a second surface needs the same rule, or a reviewer flags
+  it. A standard is a rule that has OUTGROWN one capability; until then it lives as spec behavior.
+  You do not standardize on a hunch.
 
-**RESOLVE-THEN-AUTHOR.** For each clause, RECORD whether its check and test will be REUSED (an
-existing project check/test already covers it) or newly AUTHORED. Resolve against existing
-project checks first; only author when none fits.
+**RESOLVE-THEN-AUTHOR.** For each clause, RECORD whether its test will be REUSED (an existing
+project check/test already covers it) or newly AUTHORED. Resolve against existing project checks
+first; only author when none fits.
 
 **RATIFICATION.** Every CREATE / REVISE is surfaced for human sign-off at PR review: the soft-CI
 judge posts "standards-changed" suspects and a human approves the PR. Never self-merge a
-standards change — standards bind the whole project.
+standards change — standards bind the whole project. The judge ALSO surfaces standard-CANDIDATES:
+a recurring local pattern that should be enforced project-wide, flagged for promotion (a
+standard-candidate, like a standards-changed suspect) — the DEFER-to-CREATE ratchet.
 
 ---
 
@@ -234,8 +256,8 @@ standards change — standards bind the whole project.
 spec-first references "the project's **gate**" abstractly so the schema stays stack-agnostic.
 The gate is **EXTERNAL** to OpenSpec — `openspec validate --strict` is only one of its inputs.
 It is a SINGLE command that both CI and the local authoring loop run: **continuously during a
-change (after each task group), not only at the end**, and required green as the LAST task group
-before the change is complete.
+change, and required green as the LAST task group before the change is complete** — PRE-archive,
+when the change (deltas + `standards/` + tests + git) is all on disk.
 
 It runs **six steps**, fails on the first red for steps 1–5, and runs the judge last:
 
@@ -243,37 +265,42 @@ It runs **six steps**, fails on the first red for steps 1–5, and runs the judg
    this change's checks. (Governance standards' enforcer commands run here too, like any standard
    — no extra step.)
 2. **Org-standards integrity** — `<integrity command>` (skip if you consume no org bundle). Every
-   spec under `specs/_org/` MUST match the pinned org-standards bundle on its **NORMALIZED**
-   rule-bearing fields (frontmatter `test`/`tier`/`governs` + the requirement/scenario set,
-   ignoring whitespace/comments — raw byte-match flips on reformatting). A locally loosened org
-   standard is a forbidden divergence — fail.
-3. **Coverage** — `<coverage command>`. For every spec TOUCHED BY THIS CHANGE (added/modified
-   delta): its `test:` MUST resolve to a real, wired-in test, AND every `#### Scenario:` in it MUST
-   have ≥1 test carrying that scenario's `@spec <capability>/<requirement>/<scenario>` marker
-   (coverage keys on `test:` only — there is no `check:` to resolve). A scenario with no projecting
-   test ⇒ declared-but-unprojected ⇒ fail. The gate also asserts the declared `tier` matches what
-   `test:` resolves to (machine-checkable test ⇒ mechanical; registered judge run ⇒ judge) and
-   FAILS on mismatch. A judge-tier clause is covered by its registered judge check, not a
-   mechanical test. Untouched specs are not re-audited; `adoption: legacy` specs are exempt until
-   first modified. **Re-apply-after-CREATE is a gate sub-check:** after a new spec's first (CREATE)
-   archive the gate FAILS if the built spec is missing its CORE (`test:`), so a forgotten re-apply
-   cannot silently pass coverage.
-4. **Regression diff** — `<regression command>`. For each touched main spec, diff its
+   file under `standards/_org/` MUST match the pinned org-standards bundle on its **NORMALIZED**
+   rule-bearing fields (`governs`/`tier` frontmatter + the requirement/scenario set, ignoring
+   whitespace/comments — raw byte-match flips on reformatting). A locally loosened org standard is
+   a forbidden divergence — fail.
+3. **Standards validation** — every `standards/<name>.md` is well-formed: `governs:` + `tier:`
+   present; a `### Requirement:` with a literal SHALL/MUST + a `conforms` scenario + a `violates`
+   scenario. (Standards are NOT seen by `openspec validate` — the gate is their validator.)
+4. **Coverage** — `<coverage command>`. Reads the CHANGE: the functional-spec deltas + every
+   touched/created `standards/` file + the test markers + git. Per touched functional spec AND per
+   touched/created standard, EVERY `#### Scenario:` MUST have ≥1 test carrying that scenario's
+   `@spec <capability-or-standard>/<requirement>/<scenario>` marker. A scenario with no projecting
+   test ⇒ declared-but-unprojected ⇒ fail. The gate also asserts each standard's declared `tier`
+   matches what its test resolves to (machine-checkable test ⇒ mechanical; registered judge run ⇒
+   judge) and FAILS on mismatch. A judge-tier standard is covered by its registered judge check,
+   not a mechanical test. Untouched functional specs are not re-audited.
+5. **Regression diff** — `<regression command>`. For each touched functional spec, diff its
    requirement+scenario set against its BASELINE = the **full built spec at this change's
-   merge-base** (recovered from git, NOT from the archive delta). A requirement or scenario that
+   merge-base** (recovered from git, NOT from the archive delta). For each touched standard, diff
+   the `standards/` file against its git merge-base form. A requirement or scenario that
    disappeared without an explicit `## REMOVED Requirements` (or `## RENAMED Requirements`) delta
-   is a silent regression — fail.
-5. **`openspec validate --strict`** — exit 0. (Structural rules are HARD errors even without
-   `--strict`; `## Purpose` < 50 chars fails only under `--strict` — see the 1.4.1 facts below.)
-6. **Judge** (tier: judge clauses) — `<judge command>`: an agent in print mode reviewing the
+   — or, for a standard, a dropped requirement/scenario without a Rationale-log entry — is a silent
+   regression. NO archived main spec is needed (the merge-base built form comes from git).
+6. **`openspec validate --strict`** — exit 0 over the functional-spec deltas. (Structural rules
+   are HARD errors even without `--strict`; `## Purpose` < 50 chars fails only under `--strict` —
+   see the 1.4.1 facts below.)
+7. **Judge** (tier: judge standards) — `<judge command>`: an agent in print mode reviewing the
    governed scope for the part no mechanical check covers.
    - **Locally:** BLOCKING. Do not close a task while the judge has an `open` suspect — fix it,
-     or mark it `justified` with a pointer to the spec's Rationale log.
+     or mark it `justified` with a pointer to the standard's Rationale log.
    - **In CI:** SOFT. Post suspects as PR annotations / a "human-review-needed" flag. NEVER
      auto-fail the build on a non-deterministic verdict.
 
 **Green-as-last-group.** The gate runs throughout the change so breakage surfaces early; the
-FINAL task group is "the full gate green," and it MUST be green before the change is complete.
+FINAL task group is "the full gate green," and it MUST be green before the change is complete —
+and before archive. Archive then merges the functional deltas into `openspec/specs/` and leaves
+`standards/` untouched. Merge is the finish.
 
 The one thing the gate canNOT do is block direct pushes to the default branch — that is your git
 host's branch protection (see Governance). What the gate proves and doesn't prove is the honesty
@@ -281,46 +308,52 @@ note above: consistency + no-silent-regression, NOT spec truth.
 
 ---
 
-## Tests on every spec, coverage, regression
+## Tests, coverage, regression
 
-**A test on every spec.** `test:` is the SINGLE enforcement ref — the one frontmatter field the
-coverage check resolves. A test is a PROJECTION of a scenario, regenerable from it; the projection's
-FORM is the stack's choice. No spec ships without it resolving:
+**A test on every scenario.** A test is a PROJECTION of a scenario, regenerable from it; the
+projection's FORM is the stack's choice. No scenario ships without a wired-in test carrying its
+marker:
 
-- **Functional** → each scenario projects to a test (unit / e2e / property / contract / type-level /
+- **Functional scenario** → a test (unit / e2e / property / contract / type-level /
   runtime-assertion — whatever checks THAT scenario).
-- **Standard @ mechanical** → a test asserting the enforcer (a unit/contract/type/runtime test, or a
-  lint/AST rule — the stack's choice, named in the test body and the spec prose) FLAGS the
+- **Standard @ mechanical** → a test asserting the enforcer (a unit/contract/type/runtime test, or
+  a lint/AST rule — the stack's choice, named in the test body and the standard's prose) FLAGS the
   `violates` example and PASSES the `conforms` example (those scenarios ARE the fixtures).
 - **Standard @ judge** → the registered, re-runnable judge check IS its test.
 
-**Coverage** audits the CHANGE, not the whole pre-existing tree. Per touched spec (added/modified),
-EVERY `#### Scenario:` must have ≥1 test carrying its `@spec
-<capability>/<requirement>/<scenario>` marker; a scenario with no projecting test is a defect and
-MUST fail. This is stricter than the old requirement-level linkage and is the faithful
-operationalization of "tests are projections of scenarios." (A judge clause counts as covered by
-its registered judge check; coverage does NOT demand a mechanical test of a judge clause.
-`adoption: legacy` specs are exempt until first modified. A separate `<coverage --all>` is a
-non-blocking backlog report that may scan everything.)
+**Coverage** audits the CHANGE, not the whole pre-existing tree. It reads the functional-spec
+deltas + the touched/created `standards/` files + test markers + git. Per touched functional spec
+AND per touched/created standard, EVERY `#### Scenario:` must have ≥1 test carrying its `@spec
+<capability-or-standard>/<requirement>/<scenario>` marker; a scenario with no projecting test is a
+defect and MUST fail. Coverage runs PRE-archive (everything it reads is on disk). Coverage =
+scenario→test linkage; strength = ratification. (A judge-tier standard counts as covered by its
+registered judge check; coverage does NOT demand a mechanical test of a judge clause. A separate
+`<coverage --all>` is a non-blocking backlog report that may scan everything.)
 
 Add a **traceability marker** tying each test to the SCENARIO it projects — default `@spec
-<capability>/<requirement>/<scenario>` as a comment in the test file — so the coverage check can
-grep it. A single test MAY carry MULTIPLE `@spec` markers, one per scenario it projects; the
-marker sits on each test CASE (each `it()`/`test` block, or each RuleTester `valid`|`invalid`
+<capability-or-standard>/<requirement>/<scenario>` as a comment in the test file — so the coverage
+check can grep it. A single test MAY carry MULTIPLE `@spec` markers, one per scenario it projects;
+the marker sits on each test CASE (each `it()`/`test` block, or each RuleTester `valid`|`invalid`
 fixture group). A `standard@mechanical` check-test covering `conforms` AND `violates` carries TWO
 markers. Scenario names are matched like requirement names (case-sensitive, trailing-whitespace
 normalized); renaming a scenario ⇒ re-project its marker.
 
 **Regression** runs the FULL existing check/test suite (a change that greens its own checks but
-reds an existing one is a regression and fails), AND diffs each touched main spec's
-requirement+scenario set against its **BASELINE = the merge-base built spec**
-(`openspec/specs/<cap>/spec.md` as it stood before these deltas applied — **recovered from git,
-NOT from the archive delta**, which is only the ADDED/MODIFIED/REMOVED diff and cannot reconstruct
-the prior set). A requirement or scenario that disappeared without an explicit `## REMOVED
-Requirements` delta is a silent regression (archive's MODIFIED replaces the WHOLE requirement
-block) — fail. A touched spec with NO built form at the merge-base (newly added, or the first
-modify of an `adoption: legacy` spec) has no baseline — coverage governs it instead, and the
-regression baseline is established from this change forward.
+reds an existing one is a regression and fails), AND diffs durable records against their
+merge-base form:
+
+- **Functional specs** — diff each touched spec's requirement+scenario set against its **BASELINE =
+  the merge-base built spec** (`openspec/specs/<cap>/spec.md` as it stood before these deltas
+  applied — **recovered from git, NOT from the archive delta**, which is only the
+  ADDED/MODIFIED/REMOVED diff and cannot reconstruct the prior set). A requirement or scenario that
+  disappeared without an explicit `## REMOVED Requirements` delta is a silent regression (archive's
+  MODIFIED replaces the WHOLE requirement block) — fail.
+- **Standards** — `standards/<name>.md` are plain git files; diff each touched standard against its
+  git merge-base. A dropped requirement/scenario without a Rationale-log entry is a silent
+  regression — fail.
+
+A touched functional spec with NO built form at the merge-base (newly added) has no baseline —
+coverage governs it instead, and the regression baseline is established from this change forward.
 
 ### Empirical OpenSpec 1.4.1 facts
 
@@ -336,21 +369,15 @@ These are tested, version-sensitive behaviors — re-verify on upgrade:
   HARD errors that fail even without `--strict`. `## Why` < 50 chars and > 10 deltas do NOT fail
   strict — if you want those bars, add them as your own grep/length sub-step, not as a `--strict`
   claim.
-- **Archive rebuilds full-file (MODIFY steady-state).** On a MODIFY archive against an existing
-  built spec, `openspec archive` keeps everything ABOVE `## Requirements` and any trailing `## `
-  section, and DELETES anything inside `## Requirements` that is not a `### Requirement:` block —
-  so custom frontmatter, the ADR, and the rationale log live ABOVE `## Requirements` or in a
-  trailing section, never between requirements. The FIRST/CREATE archive is the exception (next
-  bullet): it builds from the ADDED delta body ALONE, carrying it verbatim and dropping CORE/ADR/
-  rationale — so keep CREATE deltas minimal and re-apply after.
-- **Archive-on-CREATE drops non-requirement content (the re-apply caveat).** A spec's FIRST
-  archive (CREATE) rebuilds the main spec from the ADDED delta ALONE — it DROPS the frontmatter
-  CORE, the ADR, and the rationale log, and stubs `## Purpose` as "TBD". Only later MODIFY
-  archives preserve that content. **So after a new spec's first archive, RE-APPLY its
-  frontmatter CORE (`test:`) + ADR + rationale log to `openspec/specs/<name>/spec.md` and re-fill
-  Purpose, then re-run the gate** — without the CORE, coverage has nothing to read. This re-apply
-  is BACKSTOPPED by the gate (a CREATE that lands without its CORE FAILS coverage; see step 3), so
-  a forgotten re-apply cannot silently pass. (The tasks block carries the human-facing step.)
+- **Archive merges functional deltas natively.** On a MODIFY archive, `openspec archive` rebuilds
+  the built spec from the merge-base form + the delta; on a CREATE archive it builds from the
+  ADDED delta body and stubs `## Purpose` as "TBD … Update Purpose after archive". Either way the
+  REQUIREMENTS survive — a functional spec is a pure OpenSpec spec, so archive handles it natively.
+  Filling in a stubbed Purpose after a CREATE is OpenSpec's OWN native step — you do it after
+  archive.
+- **`standards/` is never archived.** Top-level `standards/<name>.md` live OUTSIDE `openspec/`, so
+  `openspec archive` never touches them — their frontmatter, Decision Record, and Rationale log are
+  always intact. They are ordinary committed git files.
 - **Archive matches requirement names CASE-SENSITIVELY**, normalizing trailing whitespace only —
   keep the traceability marker's casing exact, and bind the regression matcher to the same
   trailing-only, case-sensitive normalization.
@@ -359,9 +386,9 @@ These are tested, version-sensitive behaviors — re-verify on upgrade:
 
 OpenSpec (verified on 1.4.1) emits, per artifact, a `<template>` block prefaced "Use this as the
 structure for your output file. Fill in the sections" AND a separate `<instruction>` block ("AI
-instructions for creating this artifact"). So the how-to GUIDANCE prose (the "Capabilities &
-standards" specs guidance, the "Standards loop" design guidance, the "Enforcement
-tasks/coverage/regression/re-apply" tasks guidance, the proposal guidance) is set as the artifact's
+instructions for creating this artifact"). So the how-to GUIDANCE prose (the "Capabilities" specs
+guidance, the "Standards loop" design guidance, the "Standard record" guidance, the "Enforcement
+tasks/coverage/regression" tasks guidance, the proposal guidance) is set as the artifact's
 `instruction:` field in the forked `schema.yaml` — NOT appended to the template file. The
 `template:` files stay clean FILL-IN SCAFFOLDS; genuine document STRUCTURE (e.g. the proposal's
 `## Affected surfaces & rollback` heading) MAY remain a small template addition.
@@ -371,28 +398,28 @@ carry NONE of your guidance. Your guidance binds the agent at **authoring time**
 `openspec instructions <artifact> --change <id>`, which emits both blocks (`instruction:` = your
 guidance, `template:` = your scaffold). So the logic lives in the schema and is delivered on demand,
 not baked into skills. Smoke-test it: `openspec new change probe && openspec instructions specs
---change probe` must print the "Capabilities & standards" guidance. If it doesn't, the guidance
-isn't wired and the schema is inert.
+--change probe` must print the "Capabilities" guidance. If it doesn't, the guidance isn't wired and
+the schema is inert.
 
 ---
 
 ## Governance — make the flow the only path
 
 Want "every change goes through OpenSpec" to be a *rule*, not a hope? It's just more standards.
-`templates/governance.md` ships three seed standards (they follow `templates/standard.md`, drop
-under `specs/governance/<name>/spec.md` or `specs/_org/`):
+`templates/governance.md` ships three seed standards (they follow `templates/standard.md` and drop
+under top-level `standards/<name>.md` — or `standards/_org/` if shared):
 
 - **changes-via-openspec** — the default branch accepts only archived OpenSpec changes; every
   non-generated file in the diff traces to that change's tasks/specs.
 - **branch-per-change** — exactly one change per branch/worktree, named `change/<id>` (id ==
   branch suffix).
 - **change-lifecycle** — gate-green + human-approved + archived before merge; the approval
-  RATIFIES the spec as the source of truth.
+  RATIFIES the record as the source of truth.
 
 **The in-repo-vs-host split.** Governance is two halves, and both are required:
 
-- **In repo (version-controlled):** the three governance enforcers above (each named in its
-  standard's `test:` body), run by the gate (step 1). They key off `changes/`, the branch name,
+- **In repo (version-controlled):** the three governance standards above (each naming its enforcer
+  in its test body), run by the gate (step 1). They key off `openspec/changes/`, the branch name,
   and the PR diff. Only the mechanical legs are in-repo-checkable: archive-present, single-change,
   name-match.
 - **At the git host (cannot live in the repo):** **branch protection** on the default branch —
@@ -408,73 +435,73 @@ for the org-standards bundle, so every repo inherits the same immutable rule.
 ## Brownfield adoption
 
 spec-first governs **changes**, not your pre-existing tree — so it installs green on a real repo
-and ratchets coverage upward one change at a time. The `adoption:` field is the legacy ratchet.
-Before the first change:
+and ratchets coverage upward one change at a time. Coverage is **CHANGE-SCOPED**: an untouched
+legacy spec is never audited; touch one → you spec it and test its scenarios ("you touched it, you
+specify it"). Before the first change:
 
 - **Scope strict to changed paths** (or bring the repo `validate --strict`-clean once) so an
   unrelated change never reds on legacy well-formedness.
-- **Tag every pre-existing spec `adoption: legacy`** — `legacy` exempts it from the coverage
-  check until it is next modified, when the exemption drops ("you touched it, you specify it").
-- Then **enforce-on-touch**: each change fully specs and tests what it adds or modifies. Coverage
-  and `--strict` are **change-scoped**, never a whole-tree audit.
+- **Enforce-on-touch:** each change fully specs and tests what it adds or modifies. Coverage and
+  `--strict` are change-scoped, never a whole-tree audit. A non-blocking `<coverage --all>` backlog
+  report scans the whole tree so you can SEE the gap without it reding the build — the ratchet.
 
 **Bootstrap standards from existing conventions.** On a fresh adoption, RETRIEVE finds nothing, so
-every cross-cutting decision looks like ungoverned CREATE ground. Seed the corpus from what you
+every cross-cutting decision looks like ungoverned CREATE ground. Seed `standards/` from what you
 ALREADY enforce: for each existing rule (eslint/biome config, tsconfig flags, CI checks,
-CONTRIBUTING conventions) write a STANDARD whose `test:` RESOLVES to that existing tool (the
-enforcer named in its body) — this is resolve-then-author documenting enforcement you already have,
-not new machinery. Mark each `adoption: legacy`, scope its `governs:`, and bias to FEW. This gives
-design-time RETRIEVE something real to find and turns implicit conventions into enforced, reviewable
-standards one at a time.
+CONTRIBUTING conventions) write a STANDARD whose enforcer RESOLVES to that existing tool (named in
+its test body) — this is resolve-then-author documenting enforcement you already have, not new
+machinery. Scope each `governs:` and bias to FEW. This gives design-time RETRIEVE something real to
+find and turns implicit conventions into enforced, reviewable standards one at a time.
 
-(Greenfield: skip all of this — there's no legacy tree, so `adoption:` is omitted everywhere.)
+(Greenfield: skip all of this — there's no legacy tree, and `standards/` starts empty.)
 
 ## Org-shared standards
 
 > **Secondary, optional capability.** The headline is that standards bind across the *whole
 > project*; this is a bonus for orgs that want the *same* standard enforced in many repos.
 
-The portable unit is the **standard's SPEC** — its rule + conforms/violates SCENARIOS — which is
+The portable unit is the **standard FILE** — its rule + conforms/violates SCENARIOS — which is
 stack-agnostic. You share the SCENARIO; each consuming project PROJECTS those scenarios into its
 OWN enforcement form (its own test). Reuse is **copy-in seed**, the same shape as the schema bundle
 itself (OpenSpec has no remote-URL referencing — [issue
 #1131](https://github.com/Fission-AI/OpenSpec/issues/1131)):
 
-- **Ship** a versioned `org-standards/` bundle: complete `standard.md` instances, each
-  `governs:`-scoped, each carrying its rule + conforms/violates scenarios. (A shared config you
-  also ship — e.g. a base eslint-config / tsconfig — is a convenient projection target, not the
-  shared unit.)
-- **Adopt** per project by copying them under the reserved prefix `specs/_org/<name>/spec.md`,
+- **Ship** a versioned `standards/` bundle: complete `standard.md` instances, each `governs:`-scoped,
+  each carrying its Decision Record + rule + conforms/violates scenarios + Rationale log. (A shared
+  config you also ship — e.g. a base eslint-config / tsconfig — is a convenient projection target,
+  not the shared unit.)
+- **Adopt** per project by copying them under the reserved prefix `standards/_org/<name>.md`,
   **pinning** the bundle version in `project.md`, and PROJECTING each standard's scenarios into a
   local test in the project's own enforcement form.
 - **Make them mandatory** via the gate's org-standards integrity step (gate step 2): every
-  `specs/_org/` spec must match the pinned bundle on its **NORMALIZED** rule-bearing fields
-  (frontmatter + the requirement/scenario set, ignoring whitespace/comments — raw byte-match
-  flips on reformatting), so a locally loosened org rule reds the gate. The SPEC (incl. scenarios)
-  is shared and immutable; the projection/test is LOCAL. `specs/_org/` is never a local delta
-  target, so archive never rewrites it. To change one, **upstream a REVISE and bump the pin** —
-  you cannot weaken it locally.
+  `standards/_org/` file must match the pinned bundle on its **NORMALIZED** rule-bearing fields
+  (frontmatter + the requirement/scenario set, ignoring whitespace/comments — raw byte-match flips
+  on reformatting), so a locally loosened org rule reds the gate. The standard FILE (incl.
+  scenarios) is shared and immutable; the projection/test is LOCAL. `standards/` is never archived,
+  so the file stays exactly as shipped. To change one, **upstream a REVISE and bump the pin** — you
+  cannot weaken it locally.
 
 > **Reuse the FLOW vs reuse the RULES.** Dropping `spec-first/` in `~/.local/share` shares the
-> *empty workflow*, not your standards — a standard is a spec *instance*, not a template, so it
-> can't ride in `schema.yaml`. To share enforced rules, use the org-shared library above.
+> *empty workflow*, not your standards — a standard is a `standards/` file *instance*, not a
+> template, so it can't ride in `schema.yaml`. To share enforced rules, use the org-shared bundle
+> above.
 
 ---
 
 ## Worked end-to-end example
 
 `examples/add-rate-limit/` is a complete change walked through the whole flow, end to end. It
-demonstrates: a **functional capability** (the rate limiter's behavior, with Given/When/Then
-scenarios each projected into a test); a **standard CREATE** caught by the design standards loop on
-ungoverned ground (a cross-cutting rate-limit policy with a `governs:` scope, an ADR, and
-conforms/violates scenarios that double as the test's fixtures); the **frontmatter CORE** on
-both shapes; the **tasks** that resolve-then-author each enforcer, test, and the per-scenario
-`@spec <capability>/<requirement>/<scenario>` marker;
-the **gate** run continuously and green as the last group; the **archive-on-CREATE re-apply**
-caveat for the newly created specs; and **ratification** — the standard CREATE is surfaced at PR
-review (the soft-CI judge posts a "standards-changed" suspect; this change carries no judge-tier
-clause, so the judge step runs and finds none). Read it alongside this README to see every section
-above in one concrete change.
+demonstrates: a **functional capability** (the rate limiter's behavior, a pure OpenSpec spec with
+Given/When/Then scenarios each projected into a test); a **standard CREATE** caught by the design
+standards loop on ungoverned ground (a cross-cutting rate-limit policy authored as a self-contained
+`standards/<name>.md` — `governs:` scope, Decision Record, conforms/violates scenarios that double
+as the test's fixtures, Rationale log); the **tasks** that resolve-then-author each enforcer, test,
+and the per-scenario `@spec <capability-or-standard>/<requirement>/<scenario>` marker; the **gate**
+run continuously and green as the last group — PRE-archive; and **archive as the finish** (the
+functional delta merges into `openspec/specs/`, the `standards/` file is left untouched). It also
+shows **ratification** — the standard CREATE is surfaced at PR review (the soft-CI judge posts a
+"standards-changed" suspect; this change carries no judge-tier standard, so the judge step runs and
+finds none). Read it alongside this README to see every section above in one concrete change.
 
 ## What's inside
 
@@ -483,12 +510,12 @@ above in one concrete change.
 ├── README.md                       # this file
 ├── LICENSE
 ├── openspec/schemas/spec-first/
-│   ├── schema.yaml                 # full schema shape: 4 base artifacts + optional `judge` + apply
+│   ├── schema.yaml                 # full schema shape: artifacts + conditional `standard` + optional `judge`
 │   ├── SETUP.md                    # step-by-step install
 │   └── templates/
-│       ├── _additions.md           # the guidance prose → set as each artifact's `instruction:` in schema.yaml (proposal/specs/design/tasks)
-│       ├── standard.md             # complete archive-safe shape for a STANDARD spec (+ ADR + rationale log)
-│       ├── gate.md                 # the 6-step gate block, embedded by project.md
+│       ├── _additions.md           # the guidance prose → set as each artifact's `instruction:` in schema.yaml (proposal/specs/design/standard/tasks)
+│       ├── standard.md             # the standards/<name>.md template (governs+tier + ADR + rule + conforms/violates + rationale log)
+│       ├── gate.md                 # the gate block, embedded by project.md
 │       ├── governance.md           # seed standards: changes-via-openspec, branch-per-change, change-lifecycle
 │       ├── project.md              # the project contract: gate + org-pin + branch-protection + adoption
 │       └── judge.md                # the judge template (hard local, soft CI)
@@ -496,10 +523,13 @@ above in one concrete change.
     └── add-rate-limit/             # a complete change walked end-to-end through the flow
 ```
 
-`schema.yaml` declares four base artifacts (`proposal` → `specs` → `design` → `tasks`), the
-optional `judge` artifact (`requires: [tasks]`, runs post-apply), and the inherited `apply:`
-block. `standard.md`, `gate.md`, `governance.md`, and `project.md` are **reference templates** —
-layered in at setup, no `schema.yaml` row; only `judge.md` gets one.
+`schema.yaml` declares the base artifacts (`proposal` → `{specs, design}`), the **conditional
+`standard`** artifact (`requires: [design]`, `generates: ../../../standards/*.md` — TOP-LEVEL,
+outside `openspec/`, authored only on CREATE/REVISE), `tasks` (`requires: [specs, design,
+standard]`), and the optional `judge` artifact (`requires: [tasks]`). `standard.md`, `gate.md`,
+`governance.md`, and `project.md` are **reference templates** — `standard.md` is the
+`standards/<name>.md` scaffold the `standard` artifact generates; `gate.md`, `governance.md`, and
+`project.md` are layered in at setup.
 
 ## Install
 
@@ -511,27 +541,31 @@ a fork.
 1. In your project: `openspec schema fork spec-driven spec-first` — writes
    `openspec/schemas/spec-first/` (project-local, version-controlled).
 2. Set the guidance blocks in `templates/_additions.md` as the artifact `instruction:` fields in
-   your forked `schema.yaml` (`proposal` / `specs` / `design` / `tasks`) — NOT appended to the
-   template files. The `template:` files stay clean fill-in scaffolds; add only the small
-   `## Affected surfaces & rollback` structure to the proposal template. (Additive per-team
+   your forked `schema.yaml` (`proposal` / `specs` / `design` / `standard` / `tasks`) — NOT
+   appended to the template files. The `template:` files stay clean fill-in scaffolds; add only the
+   small `## Affected surfaces & rollback` structure to the proposal template. (Additive per-team
    CONSTRAINTS — e.g. "this team's proposals must include a rollback plan" — belong in
    `config.rules` per-artifact, distinct from the universal flow in `instruction:`/templates.)
-3. Copy `templates/judge.md`, `templates/standard.md`, `templates/gate.md`,
+3. Add the **conditional `standard` artifact** to your forked `schema.yaml`: it generates to
+   `../../../standards/*.md` (top-level `<repo>/standards/`, OUTSIDE `openspec/` — so archive never
+   touches it), `requires: [design]`, and is a no-op unless the design loop flags CREATE/REVISE.
+   Point `tasks` at `requires: [specs, design, standard]`. Copy `templates/standard.md` (the
+   `standards/<name>.md` scaffold the artifact fills), `templates/judge.md`, `templates/gate.md`,
    `templates/governance.md`, and `templates/project.md` into the schema's `templates/`, and add
-   ONLY the `judge` row to your forked `schema.yaml` (keep the fork's other rows — they carry the
-   right `template:` pointers and the `apply:` block). `standard.md`, `gate.md`, `governance.md`,
-   and `project.md` are reference templates — no `schema.yaml` row. (Reconcile each `template:`
-   pointer with the on-disk filename — a fork may emit `spec.md`; mismatch fails `schema validate`.)
+   the `standard` and `judge` rows to `schema.yaml` (keep the fork's other rows — they carry the
+   right `template:` pointers and the `apply:` block). `gate.md`, `governance.md`, and `project.md`
+   are reference templates — no `schema.yaml` row. (Reconcile each `template:` pointer with the
+   on-disk filename — a fork may emit `spec.md`; mismatch fails `schema validate`.)
 4. `openspec schema validate spec-first`.
 5. In `openspec/config.yaml`, set `schema: spec-first` + `context: <your stack>`, then `openspec
    update`. **Note:** `openspec update` writes only the *generic* skill/command wrappers — it does
    NOT bake your guidance into them. That guidance binds the agent at authoring time via `openspec
    instructions <artifact> --change <id>` (the per-artifact `<instruction>` block), which those
    wrappers call. **Smoke-test:** `openspec new change probe && openspec instructions specs
-   --change probe` should print the "Capabilities & standards" guidance.
+   --change probe` should print the "Capabilities" guidance.
 
 Then **define the gate** (required — this is what makes the flow bite): paste `templates/gate.md`
-into `openspec/project.md` and wire its single command (the 6 steps). And, recommended, **adopt
+into `openspec/project.md` and wire its single command (the steps). And, recommended, **adopt
 governance** + set **branch protection** at your host. Full detail in
 `openspec/schemas/spec-first/SETUP.md`.
 
@@ -540,12 +574,13 @@ governance** + set **branch protection** at your host. Full detail in
 Everything stack-specific lives in `openspec/project.md` — the ONE file where a project meets the
 flow. It carries **four things** the schema templates reference abstractly:
 
-1. **The gate** — command, the 6 checks, and the traceability marker (paste from `gate.md`).
-2. **The org-standards pin** — bundle + version the integrity step matches `specs/_org/` against,
-   or `none`.
+1. **The gate** — command, the gate steps, and the traceability marker (paste from `gate.md`).
+2. **The org-standards pin** — bundle + version the integrity step matches `standards/_org/`
+   against, or `none`.
 3. **The branch-protection settings** — the host rules the gate cannot enforce (no direct pushes,
    PR required, gate-green required, ≥1 approval). Recorded so the guarantee is auditable.
-4. **The adoption mode** — greenfield | brownfield, strict scope, and the legacy-ratchet note.
+4. **The adoption mode** — greenfield | brownfield, strict scope, and the change-scoped-coverage
+   ratchet note.
 
 Copy `templates/project.md` and fill the `<…>` slots; it embeds `gate.md`. The schema templates
 stay stack-agnostic; this one file is where a project meets the flow.
@@ -562,7 +597,7 @@ stay stack-agnostic; this one file is where a project meets the flow.
 
 ## Versioning & dogfooding
 
-Tested against **OpenSpec 1.4.1**; archive-safety and `validate --strict` behavior are
+Tested against **OpenSpec 1.4.1**; archive behavior and `validate --strict` behavior are
 version-sensitive — re-verify on upgrade. Upgrades are manual copy-in: diff `templates/` and
 re-run `openspec schema validate`. And honestly: **this repo is a schema *bundle*, not itself a
 spec-first project** — it ships the flow, it doesn't run under it (a template distribution has no

@@ -1,9 +1,12 @@
 # .github/workflows/spec-first.yml
 # Minimal GitHub Actions skeleton for the spec-first gate.
-#  - `gate` is the REQUIRED job: runs gate steps 1-5 (hard, mechanical). Mark it as a
+#  - `gate` is the REQUIRED job: runs the gate's hard, mechanical steps. Mark it as a
 #    required status check in branch protection (see project.md).
 #  - `judge` is a SEPARATE, NON-REQUIRED job: runs the judge in print mode, posts suspects,
 #    and uses continue-on-error so a non-deterministic verdict NEVER reds the shared build.
+# The gate reads the CHANGE (the functional-spec delta + the standards/ records + test markers +
+# git) and runs PRE-archive: a functional spec archives natively (requirements survive) and
+# standards live in standards/ and are never archived.
 name: spec-first
 
 on:
@@ -11,20 +14,21 @@ on:
     branches: [main]
 
 jobs:
-  # ── REQUIRED: the hard gate (steps 1-5) ──────────────────────────────────────
+  # ── REQUIRED: the hard gate ──────────────────────────────────────────────────
   gate:
     name: gate (required)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          # The regression diff (step 4) needs the merge-base built spec from git, not the
-          # archive delta — so fetch enough history to resolve it.
+          # The regression diff needs the merge-base from git — the functional spec's built form
+          # and the standards/ records as they were before this change — so fetch enough history.
           fetch-depth: 0
       - name: Materialize merge-base for the regression baseline
         run: |
           git fetch --no-tags origin "${{ github.base_ref }}"
-          # regression.ts reads openspec/specs/<cap>/spec.md at this SHA as the baseline:
+          # regression.ts reads the touched openspec/specs/<cap>/spec.md AND the standards/<name>.md
+          # files at this SHA as the baseline:
           echo "MERGE_BASE=$(git merge-base "origin/${{ github.base_ref }}" HEAD)" >> "$GITHUB_ENV"
 
       - uses: actions/setup-node@v4
@@ -33,17 +37,18 @@ jobs:
           cache: npm
       - run: npm ci
 
-      # `npm run gate` runs steps 1-5 in order, failing on the first red:
+      # `npm run gate` runs the gate steps in order, failing on the first red:
       #   1 check:suite (eslint + tsc + vitest)  2 org-integrity (skipped, none)
-      #   3 check:coverage  4 check:regression (reads $MERGE_BASE, set above, for the baseline)
-      #   5 openspec validate --strict
-      # Step 6 (judge) is NOT in the required job — it is the separate job below.
+      #   3 check:standards (each standards/ record: governs+tier + a SHALL rule + conforms + violates)
+      #   4 check:coverage  5 check:regression (reads $MERGE_BASE, set above, for the baseline)
+      #   6 openspec validate --strict (the functional spec delta only)
+      # The judge is NOT in the required job — it is the separate job below.
       # (CI uses `npx` prefixes; project.md shows the bare forms assuming local bins on PATH —
       #  the same commands.)
-      - name: Gate (steps 1-5)
-        run: npm run check:suite && npm run check:coverage && npm run check:regression && npx openspec validate --strict
+      - name: Gate (hard steps)
+        run: npm run check:suite && npm run check:standards && npm run check:coverage && npm run check:regression && npx openspec validate --strict
 
-  # ── NON-REQUIRED: the judge (step 6), soft in CI ─────────────────────────────
+  # ── NON-REQUIRED: the judge, soft in CI ──────────────────────────────────────
   judge:
     name: judge (soft — never reds the build)
     runs-on: ubuntu-latest
